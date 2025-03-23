@@ -55,6 +55,15 @@ from .models.tabela import Tabela
 admin.site.register(Tabela)
 ```
 
+Rode os comandos abaixo:
+```bash
+python manage.py makemigrations cadastro
+```
+
+```bash
+python manage.py migrate
+```
+
 ### 3.3. Criar o Serializer (tabela_serializer.py)
 
 Agora, crie o arquivo `cadastro/serializers/tabela_serializer.py` para o serializer do modelo `Tabela`:
