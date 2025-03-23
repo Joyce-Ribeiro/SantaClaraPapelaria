@@ -1,4 +1,13 @@
-/venv
+# Ignorar o diretório do ambiente virtual
+/venv/
+
+# Ignorar todas as pastas __pycache__ em qualquer lugar no projeto
 **/__pycache__/
+
+# Ignorar pastas __pycache__ específicas de subdiretórios
+comercial/__pycache__/
 santaclara/__pycache__/
+cadastro/__pycache__/
+
+# Ignorar o arquivo .env
 .env
