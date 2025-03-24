@@ -1,6 +1,7 @@
 from django.db import models
 
 class Produto(models.Model):
+    cod_produto = models.AutoField(primary_key=True)
     nome = models.CharField(max_length=255)
     valor_produto = models.DecimalField(max_digits=10, decimal_places=2)
     estoque = models.IntegerField()

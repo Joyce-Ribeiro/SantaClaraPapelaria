@@ -98,3 +98,19 @@ def exibir_um():
         print("Fornecedor não encontrado.")
     cur.close()
     conn.close()
+
+def listar_todos():
+    """Lista todos os fornecedores disponíveis."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id_fornecedor, nome, cnpj FROM cadastro.fornecedor")
+    fornecedores = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    if not fornecedores:
+        print("Nenhum fornecedor encontrado.")
+        return
+
+    for fornecedor in fornecedores:
+        print(f"ID: {fornecedor[0]} - Nome: {fornecedor[1]} - CNPJ: {fornecedor[2]}")

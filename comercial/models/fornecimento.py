@@ -7,7 +7,7 @@ class Fornecimento(models.Model):
     id_fornecimento = models.AutoField(primary_key=True)
     data = models.DateTimeField()
     valor = models.DecimalField(max_digits=10, decimal_places=2)
-    distribuidor = models.ForeignKey(Distribuidor, on_delete=models.CASCADE, related_name='fornecimentos')
+    distribuidor = models.ForeignKey(Distribuidor, on_delete=models.CASCADE, related_name='fornecimentos', null=True, blank=True)
     produto = models.ForeignKey(Produto, on_delete=models.CASCADE, related_name='fornecimentos')
     fornecedor = models.ForeignKey(Fornecedor, on_delete=models.CASCADE, related_name='fornecimentos')
 

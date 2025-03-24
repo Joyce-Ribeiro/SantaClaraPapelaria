@@ -98,3 +98,19 @@ def exibir_um():
         print("Distribuidor não encontrado.")
     cur.close()
     conn.close()
+
+def listar_todos():
+    """Lista todos os distribuidores disponíveis."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id_distribuidor, nome, cnpj FROM cadastro.distribuidor")
+    distribuidores = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    if not distribuidores:
+        print("Nenhum distribuidor encontrado.")
+        return
+
+    for distribuidor in distribuidores:
+        print(f"ID: {distribuidor[0]} - Nome: {distribuidor[1]} - CNPJ: {distribuidor[2]}")
