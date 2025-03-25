@@ -108,11 +108,11 @@ def remover():
 def listar_todos():
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute('SELECT nome, valor_produto, estoque, desc_produto FROM cadastro.produto')
+    cur.execute('SELECT cod_produto, nome, valor_produto, estoque, desc_produto FROM cadastro.produto')
     produtos = cur.fetchall()
     if produtos:
         for p in produtos:
-            print(f"Nome: {p[0]}, Valor: {p[1]}, Estoque: {p[2]}, Descrição: {p[3]}")
+            print(f"Codigo: {p[0]}, Nome: {p[1]}, Valor: {p[2]}, Estoque: {p[3]}, Descrição: {p[4]}")
     else:
         print("Nenhum produto cadastrado.")
     cur.close()
