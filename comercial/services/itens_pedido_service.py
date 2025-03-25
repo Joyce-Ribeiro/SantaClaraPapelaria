@@ -1,4 +1,5 @@
 from db import get_connection
+from cadastro.services.produto_service import listar_todos
 
 def verificar_existencia(tabela, coluna, valor):
     """Verifica se um registro existe no banco de dados."""
@@ -38,17 +39,18 @@ def inserir():
 
 def inserir_itens_pedido(id_pedido):
     """Adiciona um item ao pedido existente."""
+    listar_todos()
     id_produto = input("Código do Produto: ")
     quantidade = input("Quantidade: ")
 
-    if not verificar_existencia("produto", "produto_id", id_produto):
+    if not verificar_existencia("produto", "produto.cod_produto", id_produto):
         print("Erro: Produto não encontrado.")
         return
 
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
-        'INSERT INTO cadastro.itenspedido (quantidade, id_pedido, id_produto) VALUES (%s, %s, %s) RETURNING id_itenspedido',
+        'INSERT INTO comercial.itens_pedido (quantidade, pedido_id, produto_id) VALUES (%s, %s, %s) RETURNING "id_itensPedido"',
         (quantidade, id_pedido, id_produto)
     )
     id_itenspedido = cur.fetchone()[0]

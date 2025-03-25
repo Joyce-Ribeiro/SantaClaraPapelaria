@@ -4,7 +4,10 @@ from cadastro.services import (
     pedido_service, 
     cliente_service, 
     fornecedor_service, 
-    distribuidor_service
+    distribuidor_service,
+)
+from comercial.services import (
+    itens_pedido_service,
 )
 
 def menu():
@@ -74,15 +77,29 @@ def main():
                 print("\n==== PEDIDOS ====")
                 print("1. Criar Pedido")
                 print("2. Listar Pedidos")
+                print("3. Adicionar Item a um Pedido")  # ✅ Nova opção
                 print("0. Voltar")
                 escolha = input("Escolha uma opção: ")
 
                 if escolha == "1":
-                    pedido_service.inserir()
+                    id_pedido = pedido_service.inserir()  # Gera um novo pedido e retorna o ID
+                    print(f"Pedido {id_pedido} criado com sucesso!")
+
                 elif escolha == "2":
                     pedido_service.listar_todos()
+
+                elif escolha == "3":
+                    pedido_service.listar_todos()  # Mostra os pedidos disponíveis
+                    id_pedido = input("Escolha o ID do Pedido para adicionar itens: ")
+                    
+                    if not itens_pedido_service.verificar_existencia("pedido", "id_pedido", id_pedido):
+                        print("Erro: Pedido não encontrado.")
+                    else:
+                        itens_pedido_service.inserir_itens_pedido(id_pedido)  # Chama a função para adicionar itens
+
                 elif escolha == "0":
                     break
+
                 else:
                     print("Opção inválida!")
 

@@ -18,6 +18,13 @@ def inserir():
     conn.close()
     print(f"Pedido {id_pedido} cadastrado com sucesso!")
 
+    resposta = input("Adicionar itens ao pedido [S/N]: ").strip().upper()
+    if resposta == 'S':
+        inserir_itens_pedido(id_pedido)
+    else:
+        print("Pedido sem itens adicionados.")
+
+
 def alterar():
     """Altera a data de um pedido existente."""
     id_pedido = input("ID do pedido para alterar: ")
