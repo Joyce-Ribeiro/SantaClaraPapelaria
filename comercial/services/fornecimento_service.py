@@ -2,19 +2,9 @@ from db import get_connection
 from datetime import datetime
 from cadastro.services.distribuidor_service import DistribuidorService
 from cadastro.services.fornecedor_service import FornecedorService
+from santaclara.service.auxiliar_funcao import FuncoesUteis
 
 class FornecimentoService:
-    
-    @staticmethod
-    def verificar_existencia(tabela, coluna, valor):
-        """Verifica se um registro existe no banco de dados."""
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute(f"SELECT 1 FROM cadastro.{tabela} WHERE {coluna} = %s", (valor,))
-        existe = cur.fetchone() is not None
-        cur.close()
-        conn.close()
-        return existe
     
     @staticmethod
     def inserir():
@@ -40,15 +30,15 @@ class FornecimentoService:
             print("Erro: Valor deve ser um número válido com até duas casas decimais.")
             return
 
-        if not FornecimentoService.verificar_existencia("fornecedor", "fornecedor_id", fornecedor_id):
+        if not FuncoesUteis.verificar_existencia("fornecedor", "fornecedor_id", fornecedor_id):
             print("Erro: Fornecedor não encontrado.")
             return
 
-        if id_distribuidor and not FornecimentoService.verificar_existencia("distribuidor", "id_distribuidor", id_distribuidor):
+        if id_distribuidor and not FuncoesUteis.verificar_existencia("distribuidor", "id_distribuidor", id_distribuidor):
             print("Erro: Distribuidor não encontrado.")
             return
 
-        if not FornecimentoService.verificar_existencia("produto", "produto_id", produto_id):
+        if not FuncoesUteis.verificar_existencia("produto", "produto_id", produto_id):
             print("Erro: Produto não encontrado.")
             return
 
@@ -75,7 +65,7 @@ class FornecimentoService:
         FornecedorService.listar_todos()
 
         fornecedor_id = input("Escolha o ID do Fornecedor: ")
-        if not FornecimentoService.verificar_existencia("fornecedor", "id_fornecedor", fornecedor_id):
+        if not FuncoesUteis.verificar_existencia("fornecedor", "id_fornecedor", fornecedor_id):
             print("Erro: Fornecedor não encontrado.")
             return False  # Retorna False para indicar falha
 
@@ -86,7 +76,7 @@ class FornecimentoService:
         id_distribuidor = input("Escolha o ID do Distribuidor (ou aperte Enter para ignorar): ")
 
         # Validar se distribuidor existe, se fornecido
-        if id_distribuidor and not FornecimentoService.verificar_existencia("distribuidor", "id_distribuidor", id_distribuidor):
+        if id_distribuidor and not FuncoesUteis.verificar_existencia("distribuidor", "id_distribuidor", id_distribuidor):
             print("Erro: Distribuidor não encontrado.")
             return False
         elif not id_distribuidor:

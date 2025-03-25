@@ -1,18 +1,7 @@
 from db import get_connection
+from santaclara.service.auxiliar_funcao import FuncoesUteis
 
 class OrdemServicoService:
-
-    @staticmethod
-    def verificar_existencia(tabela, coluna, valor):
-        """Verifica se um registro existe no banco de dados."""
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute(f"SELECT 1 FROM cadastro.{tabela} WHERE {coluna} = %s", (valor,))
-        existe = cur.fetchone() is not None
-        cur.close()
-        conn.close()
-        return existe
-
     @staticmethod
     def inserir():
         """Insere uma nova ordem de serviço, garantindo que pelo menos Cliente ou Vendedor exista."""
@@ -24,15 +13,15 @@ class OrdemServicoService:
             print("Erro: Deve haver pelo menos um Cliente ou um Vendedor.")
             return
 
-        if id_cliente and not OrdemServicoService.verificar_existencia("cliente", "id_cliente", id_cliente):
+        if id_cliente and not FuncoesUteis.verificar_existencia("cliente", "id_cliente", id_cliente):
             print("Erro: Cliente não encontrado.")
             return
 
-        if matricula_vendedor and not OrdemServicoService.verificar_existencia("vendedor", "matricula", matricula_vendedor):
+        if matricula_vendedor and not FuncoesUteis.verificar_existencia("vendedor", "matricula", matricula_vendedor):
             print("Erro: Vendedor não encontrado.")
             return
 
-        if not OrdemServicoService.verificar_existencia("pedido", "id_pedido", id_pedido):
+        if not FuncoesUteis.verificar_existencia("pedido", "id_pedido", id_pedido):
             print("Erro: Pedido não encontrado.")
             return
 
@@ -51,7 +40,7 @@ class OrdemServicoService:
     @staticmethod
     def inserir_ordem_servico_vendedor(cur, matricula_vendedor, id_pedido):
         """Insere uma ordem de serviço vinculada a um vendedor."""
-        if not OrdemServicoService.verificar_existencia("vendedor", "matricula", matricula_vendedor):
+        if not FuncoesUteis.verificar_existencia("vendedor", "matricula", matricula_vendedor):
             print("Erro: Vendedor não encontrado.")
             return False
 
@@ -66,7 +55,7 @@ class OrdemServicoService:
     @staticmethod
     def inserir_ordem_servico_cliente(cur, id_cliente, id_pedido):
         """Insere uma ordem de serviço vinculada a um cliente."""
-        if not OrdemServicoService.verificar_existencia("cliente", "id_cliente", id_cliente):
+        if not FuncoesUteis.verificar_existencia("cliente", "id_cliente", id_cliente):
             print("Erro: Cliente não encontrado.")
             return False
 
