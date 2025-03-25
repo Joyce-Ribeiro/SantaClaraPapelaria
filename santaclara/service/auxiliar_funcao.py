@@ -2,7 +2,6 @@ from db import get_connection
 
 class FuncoesUteis:
 
-    @staticmethod
     def verificar_existencia(tabela, coluna, valor):
         """Verifica se um registro existe no banco de dados."""
         conn = get_connection()
