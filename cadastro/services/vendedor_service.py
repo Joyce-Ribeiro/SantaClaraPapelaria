@@ -48,12 +48,12 @@ class VendedorService:
         conn.close()
         print("Vendedor alterado com sucesso!")
 
-    def pesquisar_por_nome():
-        nome = input("Nome para pesquisa: ")
+    def pesquisar_por_id():
+        matricula = input("Matrícula para pesquisa: ")
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('SELECT matricula, nome, comissao, senha FROM cadastro.vendedor WHERE nome ILIKE %s', (f'%{nome}%'))
+        cur.execute('SELECT matricula, nome, comissao, senha FROM cadastro.vendedor WHERE matricula ILIKE %s', (f'%{matricula}%',))
         vendedores = cur.fetchall()
         
         if vendedores:
@@ -107,7 +107,6 @@ class VendedorService:
         cur.close()
         conn.close()
 
-    @staticmethod
     def exibir_um():
         matricula = input("Matrícula do vendedor: ")
 
