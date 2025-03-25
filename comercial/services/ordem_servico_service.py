@@ -35,7 +35,7 @@ def inserir():
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
-        'INSERT INTO comercial.ordemservico (id_cliente, id_pedido, matricula_vendedor) VALUES (%s, %s, %s) RETURNING id_ordem',
+        'INSERT INTO comercial.ordemservico (id_cliente, id_pedido, vendedor_id) VALUES (%s, %s, %s) RETURNING id_ordem',
         (id_cliente if id_cliente else None, id_pedido, matricula_vendedor if matricula_vendedor else None)
     )
     id_ordem = cur.fetchone()[0]
@@ -43,3 +43,32 @@ def inserir():
     cur.close()
     conn.close()
     print(f"Ordem de Serviço {id_ordem} cadastrada com sucesso!")
+
+def inserir_ordem_servico_vendedor(cur, matricula_vendedor, id_pedido):
+    """Insere uma ordem de serviço vinculada a um vendedor."""
+    if not verificar_existencia("vendedor", "matricula", matricula_vendedor):
+        print("Erro: Vendedor não encontrado.")
+        return False
+    
+    cur.execute(
+        'INSERT INTO comercial.ordem_servico (vendedor_id, pedido_id) VALUES (%s, %s) RETURNING id_ordem',
+        (matricula_vendedor, id_pedido)
+    )
+    id_ordem = cur.fetchone()[0]
+    print(f"Ordem de Serviço {id_ordem} cadastrada com sucesso para o vendedor {matricula_vendedor}.")
+    return True
+
+def inserir_ordem_servico_cliente(cur, id_cliente, id_pedido):
+    """Insere uma ordem de serviço vinculada a um cliente."""
+    if not verificar_existencia("cliente", "id_cliente", id_cliente):
+        print("Erro: Cliente não encontrado.")
+        return False
+    
+    cur.execute(
+        'INSERT INTO comercial.ordem_servico (cliente_id, pedido_id) VALUES (%s, %s) RETURNING id_ordem',
+        (id_cliente, id_pedido)
+    )
+    id_ordem = cur.fetchone()[0]
+    print(f"Ordem de Serviço {id_ordem} cadastrada com sucesso para o cliente {id_cliente}.")
+    return True
+
