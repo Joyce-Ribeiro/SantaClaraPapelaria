@@ -28,7 +28,6 @@ class ProdutoService:
             cod_produto = cur.fetchone()[0]
             print(f"Produto {nome} cadastrado temporariamente. Código: {cod_produto}")
 
-            # Perguntar ao usuário se ele deseja adicionar um fornecedor
             adicionar_fornecedor = input("Deseja adicionar um fornecedor para este produto? (s/n): ").lower()
 
             if adicionar_fornecedor == 's':
@@ -50,11 +49,11 @@ class ProdutoService:
             conn.close()
 
     def alterar():
-        id_produto = input("ID do produto para alterar (busca pelo nome exato): ")
+        id_produto = input("Código do produto para alterar: ")
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('SELECT nome, valor_produto, estoque, desc_produto FROM cadastro.produto WHERE nome = %s', (id_produto,))
+        cur.execute('SELECT cod_produto, nome, valor_produto, estoque, desc_produto FROM cadastro.produto WHERE cod_produto = %s', (id_produto,))
         produto = cur.fetchone()
 
         if not produto:
@@ -63,15 +62,15 @@ class ProdutoService:
             conn.close()
             return
 
-        print(f"Produto atual: Nome: {produto[0]}, Valor: {produto[1]}, Estoque: {produto[2]}, Descrição: {produto[3]}")
+        print(f"Produto atual: Código: {produto[0]}, Nome: {produto[1]}, Valor: {produto[2]}, Estoque: {produto[3]}, Descrição: {produto[4]}")
 
-        novo_nome = input(f"Novo nome ({produto[0]}): ") or produto[0]
-        novo_valor = input(f"Novo valor ({produto[1]}): ") or produto[1]
-        novo_estoque = input(f"Novo estoque ({produto[2]}): ") or produto[2]
-        nova_desc = input(f"Nova descrição ({produto[3]}): ") or produto[3]
+        novo_nome = input(f"Novo nome ({produto[1]}): ") or produto[1]
+        novo_valor = input(f"Novo valor ({produto[2]}): ") or produto[2]
+        novo_estoque = input(f"Novo estoque ({produto[3]}): ") or produto[3]
+        nova_desc = input(f"Nova descrição ({produto[4]}): ") or produto[4]
 
         cur.execute(
-            'UPDATE cadastro.produto SET nome = %s, valor_produto = %s, estoque = %s, desc_produto = %s WHERE nome = %s',
+            'UPDATE cadastro.produto SET nome = %s, valor_produto = %s, estoque = %s, desc_produto = %s WHERE cod_produto = %s',
             (novo_nome, novo_valor, novo_estoque, nova_desc, id_produto)
         )
         conn.commit()
@@ -79,16 +78,16 @@ class ProdutoService:
         conn.close()
         print("Produto alterado com sucesso!")
 
-    def pesquisar_por_id():
-        cod_produto = input("Código do prodtudo para pesquisa: ")
+    def pesquisar_por_nome():
+        nome = input("Nome para pesquisa: ")
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('SELECT cod_produto, nome, valor_produto, estoque, desc_produto FROM cadastro.produto WHERE cod_produto = %s', (cod_produto,))
+        cur.execute('SELECT nome, valor_produto, estoque, desc_produto FROM cadastro.produto WHERE nome ILIKE %s', (f'%{nome}%',))
         produtos = cur.fetchall()
         if produtos:
             for p in produtos:
-                print(f"Código: {p[0]}, Nome: {p[1]}, Valor: {p[2]}, Estoque: {p[3]}, Descrição: {p[4]}")
+                print(f"Nome: {p[0]}, Valor: {p[1]}, Estoque: {p[2]}, Descrição: {p[3]}")
         else:
             print("Nenhum produto encontrado.")
         cur.close()
@@ -134,14 +133,14 @@ class ProdutoService:
         conn.close()
 
     def exibir_um():
-        nome_produto = input("Nome exato do produto: ")
+        cod_produto = input("Código do produto: ")
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('SELECT nome, valor_produto, estoque, desc_produto FROM cadastro.produto WHERE nome = %s', (nome_produto,))
+        cur.execute('SELECT cod_produto, nome, valor_produto, estoque, desc_produto FROM cadastro.produto WHERE cod_produto = %s', (cod_produto,))
         p = cur.fetchone()
         if p:
-            print(f"Nome: {p[0]}, Valor: {p[1]}, Estoque: {p[2]}, Descrição: {p[3]}")
+            print(f"Código: {p[0]}, Nome: {p[1]}, Valor: {p[2]}, Estoque: {p[3]}, Descrição: {p[4]}")
         else:
             print("Produto não encontrado.")
         cur.close()

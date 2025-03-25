@@ -45,12 +45,12 @@ class DistribuidorService:
         conn.close()
         print("Distribuidor alterado com sucesso!")
 
-    def pesquisar_por_id():
-        id_distribuidor = input("Id para pesquisa: ")
+    def pesquisar_por_nome():
+        nome = input("Nome para pesquisa: ")
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('SELECT id_distribuidor, nome, cnpj FROM cadastro.distribuidor WHERE id_distribuidor = %s', (id_distribuidor,))
+        cur.execute('SELECT id_distribuidor, nome, cnpj FROM cadastro.distribuidor WHERE nome ILIKE %s', (f'%{nome}%',))
         distribuidores = cur.fetchall()
         if distribuidores:
             for d in distribuidores:

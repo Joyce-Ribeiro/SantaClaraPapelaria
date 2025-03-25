@@ -23,7 +23,7 @@ def submenu(entidade):
     print(f"\n==== {entidade.upper()} ====")
     print("1. Inserir")
     print("2. Alterar")
-    print("3. Pesquisar por Id")
+    print("3. Pesquisar por Nome")
     print("4. Remover")
     print("5. Listar Todos")
     print("6. Exibir Um")
@@ -36,7 +36,7 @@ def executar_opcao(opcao, service):
     elif opcao == "2":
         service.alterar()
     elif opcao == "3":
-        service.pesquisar_por_id()
+        service.pesquisar_por_nome()
     elif opcao == "4":
         service.remover()
     elif opcao == "5":
@@ -85,7 +85,6 @@ def main():
 
                 if escolha == "1":
                     id_pedido = PedidoService.inserir()
-                    print(f"Pedido {id_pedido} criado com sucesso!")
 
                 elif escolha == "2":
                     PedidoService.listar_todos()
