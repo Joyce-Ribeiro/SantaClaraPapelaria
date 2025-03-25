@@ -3,7 +3,8 @@ from db import get_connection
 from comercial.services.fornecimento_service import inserir_fornecimento
 
 def inserir():
-    """Cadastra um produto e automaticamente cria um fornecimento vinculado a um fornecedor e opcionalmente um distribuidor."""
+    """Cadastra um produto e cria um fornecimento vinculado. Se o fornecimento falhar, o produto não será salvo."""
+    
     nome = input("Nome do Produto: ")
     valor_produto = input("Valor do Produto: ")
     estoque = input("Quantidade em Estoque: ")
@@ -17,20 +18,33 @@ def inserir():
 
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute(
-        'INSERT INTO cadastro.produto (nome, valor_produto, estoque, desc_produto) VALUES (%s, %s, %s, %s) RETURNING cod_produto',
-        (nome, valor_produto, estoque, desc_produto if desc_produto else None)
-    )
-    cod_produto = cur.fetchone()[0]
-    conn.commit()
 
-    print(f"Produto {nome} cadastrado com sucesso! Código: {cod_produto}")
+    try:
+        # Inserir produto, mas sem dar commit ainda
+        cur.execute(
+            'INSERT INTO cadastro.produto (nome, valor_produto, estoque, desc_produto) VALUES (%s, %s, %s, %s) RETURNING cod_produto',
+            (nome, valor_produto, estoque, desc_produto if desc_produto else None)
+        )
+        cod_produto = cur.fetchone()[0]
+        print(f"Produto {nome} cadastrado temporariamente. Código: {cod_produto}")
 
-    # Criar fornecimento automaticamente
-    inserir_fornecimento(cod_produto)
+        # Agora tenta criar o fornecimento
+        sucesso = inserir_fornecimento(cod_produto, cur)  # Passa a conexão para evitar erro
+        if not sucesso:
+            raise Exception("Erro ao criar fornecimento. Produto não será cadastrado.")
 
-    cur.close()
-    conn.close()
+        # Se tudo deu certo, confirma a transação
+        conn.commit()
+        print(f"Fornecimento cadastrado com sucesso para o produto {nome}.")
+
+    except Exception as e:
+        conn.rollback()  # Se falhar, desfaz a inserção do produto
+        print(f"Erro: {e}")
+
+    finally:
+        cur.close()
+        conn.close()
+
 
 def alterar():
     id_produto = input("ID do produto para alterar (busca pelo nome exato): ")
