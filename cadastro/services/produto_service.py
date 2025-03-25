@@ -4,7 +4,7 @@ from comercial.services.fornecimento_service import FornecimentoService
 class ProdutoService:
     @staticmethod
     def inserir():
-        """Cadastra um produto e cria um fornecimento vinculado. Se o fornecimento falhar, o produto não será salvo."""
+        """Cadastra um produto e cria um fornecimento vinculado, caso o usuário deseje."""
         
         nome = input("Nome do Produto: ")
         valor_produto = input("Valor do Produto: ")
@@ -28,12 +28,18 @@ class ProdutoService:
             cod_produto = cur.fetchone()[0]
             print(f"Produto {nome} cadastrado temporariamente. Código: {cod_produto}")
 
-            sucesso = FornecimentoService.inserir_fornecimento(cod_produto, cur)
-            if not sucesso:
-                raise Exception("Erro ao criar fornecimento. Produto não será cadastrado.")
+            # Perguntar ao usuário se ele deseja adicionar um fornecedor
+            adicionar_fornecedor = input("Deseja adicionar um fornecedor para este produto? (s/n): ").lower()
+
+            if adicionar_fornecedor == 's':
+                sucesso = FornecimentoService.inserir_fornecimento(cod_produto, cur)
+                if not sucesso:
+                    raise Exception("Erro ao criar fornecimento. Produto não será cadastrado.")
+                print(f"Fornecimento cadastrado com sucesso para o produto {nome}.")
+            else:
+                print("Fornecedor não adicionado ao produto.")
 
             conn.commit()
-            print(f"Fornecimento cadastrado com sucesso para o produto {nome}.")
         
         except Exception as e:
             conn.rollback()
