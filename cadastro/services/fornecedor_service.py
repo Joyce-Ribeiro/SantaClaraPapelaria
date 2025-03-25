@@ -45,12 +45,12 @@ class FornecedorService:
         conn.close()
         print("Fornecedor alterado com sucesso!")
 
-    def pesquisar_por_id():
-        id_fornecedor = input("Id para pesquisa: ")
+    def pesquisar_por_nome():
+        nome = input("Nome para pesquisa: ")
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('SELECT id_fornecedor, nome, cnpj FROM cadastro.fornecedor WHERE id_fornecedor = %s', (id_fornecedor,))
+        cur.execute('SELECT id_fornecedor, nome, cnpj FROM cadastro.fornecedor WHERE nome ILIKE %s', (f'%{nome}%',))
         fornecedores = cur.fetchall()
         if fornecedores:
             for f in fornecedores:

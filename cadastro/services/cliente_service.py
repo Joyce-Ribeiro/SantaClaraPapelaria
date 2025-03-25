@@ -49,12 +49,12 @@ class ClienteService:
         conn.close()
         print("Cliente alterado com sucesso!")
 
-    def pesquisar_por_id():
-        id_cliente = input("Id para pesquisa: ")
+    def pesquisar_por_nome():
+        nome = input("Nome para pesquisa: ")
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('SELECT id_cliente, nome, telefone, senha, email FROM cadastro.cliente WHERE id_cliente = %s', (id_cliente,))
+        cur.execute('SELECT id_cliente, nome, telefone, senha, email FROM cadastro.cliente WHERE nome ILIKE %s', (f'%{nome}%',))
         clientes = cur.fetchall()
         if clientes:
             for c in clientes:

@@ -79,16 +79,16 @@ class ProdutoService:
         conn.close()
         print("Produto alterado com sucesso!")
 
-    def pesquisar_por_id():
-        cod_produto = input("Código do prodtudo para pesquisa: ")
+    def pesquisar_por_nome():
+        nome = input("Nome para pesquisa: ")
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('SELECT cod_produto, nome, valor_produto, estoque, desc_produto FROM cadastro.produto WHERE cod_produto = %s', (cod_produto,))
+        cur.execute('SELECT nome, valor_produto, estoque, desc_produto FROM cadastro.produto WHERE nome ILIKE %s', (f'%{nome}%',))
         produtos = cur.fetchall()
         if produtos:
             for p in produtos:
-                print(f"Código: {p[0]}, Nome: {p[1]}, Valor: {p[2]}, Estoque: {p[3]}, Descrição: {p[4]}")
+                print(f"Nome: {p[0]}, Valor: {p[1]}, Estoque: {p[2]}, Descrição: {p[3]}")
         else:
             print("Nenhum produto encontrado.")
         cur.close()
