@@ -6,7 +6,6 @@ from santaclara.service.auxiliar_funcao import FuncoesUteis
 
 class FornecimentoService:
     
-    @staticmethod
     def inserir():
         """Registra um novo fornecimento com validações de fornecedor, distribuidor, produto, data e valor."""
         data = input("Data do fornecimento (YYYY-MM-DD): ")
@@ -54,7 +53,6 @@ class FornecimentoService:
         conn.close()
         print(f"Fornecimento {id_fornecimento} cadastrado com sucesso!")
 
-    @staticmethod
     def inserir_fornecimento(produto_id, cur):
         """Solicita dados para registrar um fornecimento, listando distribuidores e fornecedores disponíveis."""
         data = datetime.today().strftime('%Y-%m-%d')  # Data de hoje

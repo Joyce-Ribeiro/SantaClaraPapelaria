@@ -1,3 +1,4 @@
+import psycopg2
 from db import get_connection
 
 class FornecedorService:
@@ -60,19 +61,31 @@ class FornecedorService:
         conn.close()
 
     def remover():
-        id_fornecedor = input("ID do fornecedor para remover: ")
+        try:
+            id_fornecedor = int(input("Id do fornecedor para remover: "))
+        except ValueError:
+            print("Erro: Id inválido. Deve ser um número inteiro.")
+            return
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('DELETE FROM cadastro.fornecedor WHERE id_fornecedor = %s', (id_fornecedor,))
-        if cur.rowcount == 0:
-            print("Fornecedor não encontrado.")
-        else:
-            print("Fornecedor removido com sucesso.")
-        conn.commit()
-        cur.close()
-        conn.close()
-
+        try:
+            cur.execute('DELETE FROM cadastro.fornecedor WHERE id_fornecedor = %s', (id_fornecedor,))
+            if cur.rowcount == 0:
+                print("Fornecedor não encontrado.")
+            else:
+                conn.commit()
+                print("Fornecedor removido com sucesso.")
+        except psycopg2.IntegrityError as e:
+            conn.rollback()
+            if "foreign key" in str(e).lower():
+                print("Erro: Este fornecedor não pode ser removido porque está sendo referenciado em outra tabela.")
+            else:
+                print(f"Erro ao remover fornecedor: {e}")
+        finally:
+            cur.close()
+            conn.close()
+            
     def listar_todos():
         conn = get_connection()
         cur = conn.cursor()

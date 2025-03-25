@@ -1,3 +1,4 @@
+import psycopg2
 from db import get_connection
 
 class ClienteService:
@@ -64,18 +65,30 @@ class ClienteService:
         conn.close()
 
     def remover():
-        id_cliente = input("ID do cliente para remover: ")
+        try:
+            id_cliente = int(input("Id do cliente para remover: "))
+        except ValueError:
+            print("Erro: Id inválido. Deve ser um número inteiro.")
+            return
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('DELETE FROM cadastro.cliente WHERE id_cliente = %s', (id_cliente,))
-        if cur.rowcount == 0:
-            print("Cliente não encontrado.")
-        else:
-            print("Cliente removido com sucesso.")
-        conn.commit()
-        cur.close()
-        conn.close()
+        try:
+            cur.execute('DELETE FROM cadastro.cliente WHERE id_cliente = %s', (id_cliente,))
+            if cur.rowcount == 0:
+                print("Cliente não encontrado.")
+            else:
+                conn.commit()
+                print("Cliente removido com sucesso.")
+        except psycopg2.IntegrityError as e:
+            conn.rollback()
+            if "foreign key" in str(e).lower():
+                print("Erro: Este cliente não pode ser removido porque está sendo referenciado em outra tabela.")
+            else:
+                print(f"Erro ao remover cliente: {e}")
+        finally:
+            cur.close()
+            conn.close()
 
     def listar_todos():
         conn = get_connection()

@@ -1,7 +1,7 @@
+import psycopg2
 from db import get_connection
 
 class VendedorService:
-    @staticmethod
     def inserir():
         matricula = input("Matrícula (8 caracteres): ")
         nome = input("Nome do vendedor: ")
@@ -19,7 +19,6 @@ class VendedorService:
         conn.close()
         print("Vendedor cadastrado com sucesso!")
 
-    @staticmethod
     def alterar():
         matricula = input("Matrícula do vendedor para alterar: ")
 
@@ -49,7 +48,6 @@ class VendedorService:
         conn.close()
         print("Vendedor alterado com sucesso!")
 
-    @staticmethod
     def pesquisar_por_nome():
         nome = input("Nome para pesquisa: ")
 
@@ -67,24 +65,33 @@ class VendedorService:
         cur.close()
         conn.close()
 
-    @staticmethod
     def remover():
-        matricula = input("Matrícula do vendedor para remover: ")
+        matricula = input("Matrícula do vendedor para remover: ").strip()
+
+        if not matricula:
+            print("Erro: Matrícula não pode ser vazia.")
+            return
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('DELETE FROM cadastro.vendedor WHERE matricula = %s', (matricula,))
-        
-        if cur.rowcount == 0:
-            print("Vendedor não encontrado.")
-        else:
-            print("Vendedor removido com sucesso.")
-        
-        conn.commit()
-        cur.close()
-        conn.close()
+        try:
+            cur.execute('DELETE FROM cadastro.vendedor WHERE matricula = %s', (matricula,))
+            if cur.rowcount == 0:
+                print("Vendedor não encontrado.")
+                conn.rollback()
+            else:
+                conn.commit()
+                print("Vendedor removido com sucesso.")
+        except psycopg2.IntegrityError as e:
+            conn.rollback()
+            if "foreign key" in str(e).lower():
+                print("Erro: Este vendedor não pode ser removido porque está sendo referenciado em outra tabela.")
+            else:
+                print(f"Erro ao remover vendedor: {e}")
+        finally:
+            cur.close()
+            conn.close()
 
-    @staticmethod
     def listar_todos():
         conn = get_connection()
         cur = conn.cursor()
