@@ -139,3 +139,29 @@ class PedidoService:
         
         cur.close()
         conn.close()
+
+
+    def pesquisar_produtos_por_pedido():
+        id_pedido = input("Digite o ID do pedido: ")
+
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        query = """
+            SELECT p.cod_produto, p.nome
+            FROM comercial.itens_pedido ip
+            JOIN cadastro.produto p ON ip.produto_id = p.cod_produto
+            WHERE ip.pedido_id = %s
+        """
+        
+        cur.execute(query, (id_pedido,))
+        produtos = cur.fetchall()
+        
+        if produtos:
+            for p in produtos:
+                print(f"Código: {p[0]}, Nome: {p[1]}")
+        else:
+            print("Nenhum produto encontrado para esse pedido.")
+        
+        cur.close()
+        conn.close()
