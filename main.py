@@ -1,14 +1,11 @@
-from cadastro.services import (
-    vendedor_service, 
-    produto_service, 
-    pedido_service, 
-    cliente_service, 
-    fornecedor_service, 
-    distribuidor_service,
-)
-from comercial.services import (
-    itens_pedido_service,
-)
+from cadastro.services.cliente_service import ClienteService
+from cadastro.services.distribuidor_service import DistribuidorService
+from cadastro.services.fornecedor_service import FornecedorService
+from cadastro.services.produto_service import ProdutoService
+from cadastro.services.vendedor_service import VendedorService
+from cadastro.services.pedido_service import PedidoService
+from comercial.services.itens_pedido_service import ItensPedidoService
+
 
 def menu():
     print("\n==== MENU PRINCIPAL ====")
@@ -57,7 +54,7 @@ def main():
             while True:
                 submenu("Vendedores")
                 escolha = input("Escolha uma opção: ")
-                executar_opcao(escolha, vendedor_service)
+                executar_opcao(escolha, VendedorService)
                 if escolha == "0":
                     break
         
@@ -66,9 +63,9 @@ def main():
                 submenu("Produtos")
                 escolha = input("Escolha uma opção: ")
                 if escolha == "1":  # Cadastro especial para Produto
-                    produto_service.inserir()
+                    ProdutoService.inserir()
                 else:
-                    executar_opcao(escolha, produto_service)
+                    executar_opcao(escolha, ProdutoService)
                 if escolha == "0":
                     break
         
@@ -77,25 +74,25 @@ def main():
                 print("\n==== PEDIDOS ====")
                 print("1. Criar Pedido")
                 print("2. Listar Pedidos")
-                print("3. Adicionar Item a um Pedido")  # ✅ Nova opção
+                print("3. Adicionar Item a um Pedido")  
                 print("0. Voltar")
                 escolha = input("Escolha uma opção: ")
 
                 if escolha == "1":
-                    id_pedido = pedido_service.inserir()  # Gera um novo pedido e retorna o ID
+                    id_pedido = PedidoService.inserir()  # Gera um novo pedido e retorna o ID
                     print(f"Pedido {id_pedido} criado com sucesso!")
 
                 elif escolha == "2":
-                    pedido_service.listar_todos()
+                    PedidoService.listar_todos()
 
                 elif escolha == "3":
-                    pedido_service.listar_todos()  # Mostra os pedidos disponíveis
+                    PedidoService.listar_todos()  # Mostra os pedidos disponíveis
                     id_pedido = input("Escolha o ID do Pedido para adicionar itens: ")
                     
-                    if not itens_pedido_service.verificar_existencia("pedido", "id_pedido", id_pedido):
+                    if not ItensPedidoService.verificar_existencia("pedido", "id_pedido", id_pedido):
                         print("Erro: Pedido não encontrado.")
                     else:
-                        itens_pedido_service.inserir_itens_pedido(id_pedido)  # Chama a função para adicionar itens
+                        ItensPedidoService.inserir_itens_pedido(id_pedido)  # Chama a função para adicionar itens
 
                 elif escolha == "0":
                     break
@@ -107,7 +104,7 @@ def main():
             while True:
                 submenu("Clientes")
                 escolha = input("Escolha uma opção: ")
-                executar_opcao(escolha, cliente_service)
+                executar_opcao(escolha, ClienteService)
                 if escolha == "0":
                     break
 
@@ -115,7 +112,7 @@ def main():
             while True:
                 submenu("Fornecedores")
                 escolha = input("Escolha uma opção: ")
-                executar_opcao(escolha, fornecedor_service)
+                executar_opcao(escolha, FornecedorService)
                 if escolha == "0":
                     break
         
@@ -123,7 +120,7 @@ def main():
             while True:
                 submenu("Distribuidores")
                 escolha = input("Escolha uma opção: ")
-                executar_opcao(escolha, distribuidor_service)
+                executar_opcao(escolha, DistribuidorService)
                 if escolha == "0":
                     break
 
