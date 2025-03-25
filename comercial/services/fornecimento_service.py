@@ -60,8 +60,10 @@ def inserir():
     conn.close()
     print(f"Fornecimento {id_fornecimento} cadastrado com sucesso!")
 
-def inserir_fornecimento(produto_id):
+def inserir_fornecimento(produto_id, cur):
     """Solicita dados para registrar um fornecimento, listando distribuidores e fornecedores disponíveis."""
+    from datetime import datetime
+    
     data = datetime.today().strftime('%Y-%m-%d')  # Data de hoje
     valor = input(f"Valor do Fornecimento para o Produto {produto_id}: ")
 
@@ -72,7 +74,7 @@ def inserir_fornecimento(produto_id):
     fornecedor_id = input("Escolha o ID do Fornecedor: ")
     if not verificar_existencia("fornecedor", "id_fornecedor", fornecedor_id):
         print("Erro: Fornecedor não encontrado.")
-        return
+        return False  # Retorna False para indicar falha
 
     # Listar Distribuidores (opcional)
     print("\nDistribuidores disponíveis:")
@@ -80,10 +82,10 @@ def inserir_fornecimento(produto_id):
 
     id_distribuidor = input("Escolha o ID do Distribuidor (ou aperte Enter para ignorar): ")
     
-    # Se o distribuidor não foi informado, atribuir None
+    # Validar se distribuidor existe, se fornecido
     if id_distribuidor and not verificar_existencia("distribuidor", "id_distribuidor", id_distribuidor):
         print("Erro: Distribuidor não encontrado.")
-        return
+        return False
     elif not id_distribuidor:
         id_distribuidor = None  # Caso o distribuidor não tenha sido escolhido
 
@@ -92,20 +94,20 @@ def inserir_fornecimento(produto_id):
         valor = round(float(valor), 2)
     except ValueError:
         print("Erro: O valor deve ser numérico com até duas casas decimais.")
-        return
+        return False
 
-    # Conectar ao banco de dados e realizar a inserção
-    conn = get_connection()
-    cur = conn.cursor()
+    try:
+        # Inserir fornecimento sem commit (o commit será feito na função `inserir`)
+        cur.execute(
+            'INSERT INTO comercial.fornecimento (data, valor, distribuidor_id, produto_id, fornecedor_id) '
+            'VALUES (%s, %s, %s, %s, %s) RETURNING id_fornecimento',
+            (data, valor, id_distribuidor, produto_id, fornecedor_id)
+        )
+        id_fornecimento = cur.fetchone()[0]  # Recuperar o ID do fornecimento inserido
+        print(f"Fornecimento {id_fornecimento} registrado para o produto {produto_id}.")
+        return True  # Indica sucesso
 
-    # Inserir o fornecimento
-    cur.execute(
-        'INSERT INTO comercial.fornecimento (data, valor, distribuidor_id, produto_id, fornecedor_id) VALUES (%s, %s, %s, %s, %s) RETURNING id_fornecimento',
-        (data, valor, id_distribuidor, produto_id, fornecedor_id)
-    )
-    id_fornecimento = cur.fetchone()[0]  # Recuperar o ID do fornecimento inserido
-    conn.commit()
-    cur.close()
-    conn.close()
+    except Exception as e:
+        print(f"Erro ao registrar fornecimento: {e}")
+        return False  # Indica falha
 
-    print(f"Fornecimento {id_fornecimento} registrado para o produto {produto_id}.")
