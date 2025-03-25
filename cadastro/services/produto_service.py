@@ -1,5 +1,6 @@
 from db import get_connection
 from comercial.services.fornecimento_service import FornecedorService
+from comercial.services.fornecimento_service import FornecimentoService
 
 class ProdutoService:
     @staticmethod
@@ -28,7 +29,7 @@ class ProdutoService:
             cod_produto = cur.fetchone()[0]
             print(f"Produto {nome} cadastrado temporariamente. Código: {cod_produto}")
 
-            sucesso = FornecedorService(cod_produto, cur)
+            sucesso = FornecimentoService.inserir_fornecimento(cod_produto, cur)
             if not sucesso:
                 raise Exception("Erro ao criar fornecimento. Produto não será cadastrado.")
 
