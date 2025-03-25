@@ -49,8 +49,7 @@ class ItensPedidoService:
             'INSERT INTO comercial.itens_pedido (quantidade, pedido_id, produto_id) VALUES (%s, %s, %s) RETURNING "id_itensPedido"',
             (quantidade, id_pedido, id_produto)
         )
-        id_itenspedido = cur.fetchone()[0]
         conn.commit()
         cur.close()
         conn.close()
-        print(f"Item {id_itenspedido} adicionado ao Pedido {id_pedido} com sucesso!")
+        print(f"Item {id_produto} adicionado ao Pedido {id_pedido} com sucesso!")

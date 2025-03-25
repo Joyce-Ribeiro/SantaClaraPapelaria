@@ -164,6 +164,7 @@ class PedidoService:
         produtos = cur.fetchall()
         
         if produtos:
+            print("Produtos do pedido: ")
             for p in produtos:
                 print(f"Código: {p[0]}, Nome: {p[1]}")
         else:

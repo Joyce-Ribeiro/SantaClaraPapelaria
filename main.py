@@ -85,7 +85,6 @@ def main():
 
                 if escolha == "1":
                     id_pedido = PedidoService.inserir()
-                    print(f"Pedido {id_pedido} criado com sucesso!")
 
                 elif escolha == "2":
                     PedidoService.listar_todos()
