@@ -1,3 +1,4 @@
+import psycopg2
 from db import get_connection
 from datetime import datetime
 from comercial.services.itens_pedido_service import ItensPedidoService
@@ -6,7 +7,6 @@ from cadastro.services.cliente_service import ClienteService
 from cadastro.services.vendedor_service import VendedorService
 
 class PedidoService:
-    @staticmethod
     def inserir():
         data_pedido = datetime.now()
         conn = get_connection()
@@ -44,7 +44,6 @@ class PedidoService:
         else:
             print("Pedido sem itens adicionados.")
 
-    @staticmethod
     def alterar():
         id_pedido = input("ID do pedido para alterar: ")
         conn = get_connection()
@@ -68,7 +67,6 @@ class PedidoService:
         conn.close()
         print(f"Pedido {id_pedido} alterado com sucesso!")
 
-    @staticmethod
     def pesquisar_por_data():
         data_str = input("Digite a data do pedido (YYYY-MM-DD): ")
         
@@ -92,23 +90,32 @@ class PedidoService:
         cur.close()
         conn.close()
 
-    @staticmethod
     def remover():
-        id_pedido = input("ID do pedido para remover: ")
+        try:
+            id_pedido = int(input("Id do pedido para remover: "))
+        except ValueError:
+            print("Erro: Id inválido. Deve ser um número inteiro.")
+            return
+
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('DELETE FROM cadastro.pedido WHERE id_pedido = %s', (id_pedido,))
-        
-        if cur.rowcount == 0:
-            print("Pedido não encontrado.")
-        else:
-            print(f"Pedido {id_pedido} removido com sucesso.")
-        
-        conn.commit()
-        cur.close()
-        conn.close()
+        try:
+            cur.execute('DELETE FROM cadastro.pedido WHERE id_pedido = %s', (id_pedido,))
+            if cur.rowcount == 0:
+                print("Pedido não encontrado.")
+            else:
+                conn.commit()
+                print("Pedido removido com sucesso.")
+        except psycopg2.IntegrityError as e:
+            conn.rollback()
+            if "foreign key" in str(e).lower():
+                print("Erro: Este pedido não pode ser removido porque está sendo referenciado em outra tabela.")
+            else:
+                print(f"Erro ao remover pedido: {e}")
+        finally:
+            cur.close()
+            conn.close()
 
-    @staticmethod
     def listar_todos():
         conn = get_connection()
         cur = conn.cursor()
@@ -124,7 +131,6 @@ class PedidoService:
         cur.close()
         conn.close()
 
-    @staticmethod
     def exibir_um():
         id_pedido = input("ID do pedido: ")
         conn = get_connection()

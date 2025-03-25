@@ -4,7 +4,6 @@ from santaclara.service.auxiliar_funcao import FuncoesUteis
 
 class ItensPedidoService:
 
-    @staticmethod
     def inserir():
         from cadastro.services.pedido_service import PedidoService
 
@@ -33,7 +32,6 @@ class ItensPedidoService:
         conn.close()
         print(f"Item {id_itenspedido} adicionado ao pedido {id_pedido} com sucesso!")
 
-    @staticmethod
     def inserir_itens_pedido(id_pedido):
         from cadastro.services.pedido_service import PedidoService
         """Adiciona um item ao pedido existente."""

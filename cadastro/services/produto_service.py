@@ -1,8 +1,8 @@
+import psycopg2
 from db import get_connection
 from comercial.services.fornecimento_service import FornecimentoService
 
 class ProdutoService:
-    @staticmethod
     def inserir():
         """Cadastra um produto e cria um fornecimento vinculado, caso o usuário deseje."""
         
@@ -49,7 +49,6 @@ class ProdutoService:
             cur.close()
             conn.close()
 
-    @staticmethod
     def alterar():
         id_produto = input("ID do produto para alterar (busca pelo nome exato): ")
 
@@ -80,7 +79,6 @@ class ProdutoService:
         conn.close()
         print("Produto alterado com sucesso!")
 
-    @staticmethod
     def pesquisar_por_nome():
         nome = input("Nome para pesquisa: ")
 
@@ -96,22 +94,32 @@ class ProdutoService:
         cur.close()
         conn.close()
 
-    @staticmethod
     def remover():
-        nome_produto = input("Nome exato do produto para remover: ")
+        try:
+            cod_produto = int(input("Código do produto para remover: "))
+        except ValueError:
+            print("Erro: Código do produto inválido. Deve ser um número inteiro.")
+            return
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('DELETE FROM cadastro.produto WHERE nome = %s', (nome_produto,))
-        if cur.rowcount == 0:
-            print("Produto não encontrado.")
-        else:
-            print("Produto removido com sucesso.")
-        conn.commit()
-        cur.close()
-        conn.close()
+        try:
+            cur.execute('DELETE FROM cadastro.produto WHERE cod_produto = %s', (cod_produto,))
+            if cur.rowcount == 0:
+                print("Produto não encontrado.")
+            else:
+                conn.commit()
+                print("Produto removido com sucesso.")
+        except psycopg2.IntegrityError as e:
+            conn.rollback()
+            if "foreign key" in str(e).lower():
+                print("Erro: Este produto não pode ser removido porque está sendo referenciado em outra tabela.")
+            else:
+                print(f"Erro ao remover produto: {e}")
+        finally:
+            cur.close()
+            conn.close()
 
-    @staticmethod
     def listar_todos():
         conn = get_connection()
         cur = conn.cursor()
@@ -125,7 +133,6 @@ class ProdutoService:
         cur.close()
         conn.close()
 
-    @staticmethod
     def exibir_um():
         nome_produto = input("Nome exato do produto: ")
 

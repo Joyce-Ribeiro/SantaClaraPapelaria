@@ -2,7 +2,6 @@ from db import get_connection
 from santaclara.service.auxiliar_funcao import FuncoesUteis
 
 class OrdemServicoService:
-    @staticmethod
     def inserir():
         """Insere uma nova ordem de serviço, garantindo que pelo menos Cliente ou Vendedor exista."""
         id_cliente = input("ID do Cliente (ou pressione Enter para ignorar): ")
@@ -37,7 +36,6 @@ class OrdemServicoService:
         conn.close()
         print(f"Ordem de Serviço {id_ordem} cadastrada com sucesso!")
 
-    @staticmethod
     def inserir_ordem_servico_vendedor(cur, matricula_vendedor, id_pedido):
         """Insere uma ordem de serviço vinculada a um vendedor."""
         if not FuncoesUteis.verificar_existencia("vendedor", "matricula", matricula_vendedor):
@@ -52,7 +50,6 @@ class OrdemServicoService:
         print(f"Ordem de Serviço {id_ordem} cadastrada com sucesso para o vendedor {matricula_vendedor}.")
         return True
 
-    @staticmethod
     def inserir_ordem_servico_cliente(cur, id_cliente, id_pedido):
         """Insere uma ordem de serviço vinculada a um cliente."""
         if not FuncoesUteis.verificar_existencia("cliente", "id_cliente", id_cliente):
