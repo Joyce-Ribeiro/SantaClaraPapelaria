@@ -1,11 +1,13 @@
 from db import get_connection
 from datetime import datetime
 from comercial.services.itens_pedido_service import (inserir_itens_pedido, verificar_existencia)
+from comercial.services.ordem_servico_service import (inserir_ordem_servico_cliente, inserir_ordem_servico_vendedor)
+from cadastro.services import cliente_service, vendedor_service
 
 def inserir():
     """Insere um novo pedido no banco de dados."""
     data_pedido = datetime.now()  # Registra a data e hora atuais
-
+    
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
@@ -13,12 +15,32 @@ def inserir():
         (data_pedido,)
     )
     id_pedido = cur.fetchone()[0]
-    conn.commit()
+    
+    resp = input("Pedido por cliente ou vendedor? [C/V]: ").strip().upper()
+    
+    if resp == "V":
+        vendedor_service.listar_todos()
+        vendedor = input("ID do vendedor: ")
+        sucesso = inserir_ordem_servico_vendedor(cur, vendedor, id_pedido)
+    elif resp == "C":
+        cliente_service.listar_todos()
+        cliente = input("ID do cliente: ")
+        sucesso = inserir_ordem_servico_cliente(cur, cliente, id_pedido)
+    else:
+        print("Opção inválida!")
+        return
+    
+    if sucesso:
+        conn.commit()
+        print(f"Pedido {id_pedido} cadastrado com sucesso!")
+    else:
+        conn.rollback()
+        print("Erro ao cadastrar ordem de serviço.")
+    
     cur.close()
     conn.close()
-    print(f"Pedido {id_pedido} cadastrado com sucesso!")
-
-    resposta = input("Adicionar itens ao pedido [S/N]: ").strip().upper()
+    
+    resposta = input("Adicionar itens ao pedido? [S/N]: ").strip().upper()
     if resposta == 'S':
         inserir_itens_pedido(id_pedido)
     else:
