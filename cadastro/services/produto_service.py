@@ -1,5 +1,4 @@
 from db import get_connection
-from comercial.services.fornecimento_service import FornecedorService
 from comercial.services.fornecimento_service import FornecimentoService
 
 class ProdutoService:

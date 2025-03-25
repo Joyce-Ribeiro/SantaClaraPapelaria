@@ -5,6 +5,7 @@ from cadastro.services.produto_service import ProdutoService
 from cadastro.services.vendedor_service import VendedorService
 from cadastro.services.pedido_service import PedidoService
 from comercial.services.itens_pedido_service import ItensPedidoService
+from santaclara.service.auxiliar_funcao import FuncoesUteis
 
 
 def menu():
@@ -17,6 +18,7 @@ def menu():
     print("6. Gerenciar Distribuidores")
     print("0. Sair")
 
+
 def submenu(entidade):
     print(f"\n==== {entidade.upper()} ====")
     print("1. Inserir")
@@ -26,6 +28,7 @@ def submenu(entidade):
     print("5. Listar Todos")
     print("6. Exibir Um")
     print("0. Voltar")
+
 
 def executar_opcao(opcao, service):
     if opcao == "1":
@@ -45,6 +48,7 @@ def executar_opcao(opcao, service):
     else:
         print("Opção inválida!")
 
+
 def main():
     while True:
         menu()
@@ -57,42 +61,46 @@ def main():
                 executar_opcao(escolha, VendedorService)
                 if escolha == "0":
                     break
-        
+
         elif opcao == "2":
             while True:
                 submenu("Produtos")
                 escolha = input("Escolha uma opção: ")
-                if escolha == "1":  # Cadastro especial para Produto
+                if escolha == "1":
                     ProdutoService.inserir()
                 else:
                     executar_opcao(escolha, ProdutoService)
                 if escolha == "0":
                     break
-        
+
         elif opcao == "3":
             while True:
                 print("\n==== PEDIDOS ====")
                 print("1. Criar Pedido")
                 print("2. Listar Pedidos")
-                print("3. Adicionar Item a um Pedido")  
+                print("3. Adicionar Item a um Pedido")
+                print("4. Pesquisar Produtos por Pedido")  
                 print("0. Voltar")
                 escolha = input("Escolha uma opção: ")
 
                 if escolha == "1":
-                    id_pedido = PedidoService.inserir()  # Gera um novo pedido e retorna o ID
+                    id_pedido = PedidoService.inserir()
                     print(f"Pedido {id_pedido} criado com sucesso!")
 
                 elif escolha == "2":
                     PedidoService.listar_todos()
 
                 elif escolha == "3":
-                    PedidoService.listar_todos()  # Mostra os pedidos disponíveis
+                    PedidoService.listar_todos()
                     id_pedido = input("Escolha o ID do Pedido para adicionar itens: ")
-                    
-                    if not ItensPedidoService.verificar_existencia("pedido", "id_pedido", id_pedido):
+
+                    if not FuncoesUteis.verificar_existencia("pedido", "id_pedido", id_pedido):
                         print("Erro: Pedido não encontrado.")
                     else:
-                        ItensPedidoService.inserir_itens_pedido(id_pedido)  # Chama a função para adicionar itens
+                        ItensPedidoService.inserir_itens_pedido(id_pedido)
+
+                elif escolha == "4":  # Chamada do novo serviço
+                    PedidoService.pesquisar_produtos_por_pedido()
 
                 elif escolha == "0":
                     break
@@ -115,7 +123,7 @@ def main():
                 executar_opcao(escolha, FornecedorService)
                 if escolha == "0":
                     break
-        
+
         elif opcao == "6":
             while True:
                 submenu("Distribuidores")
@@ -127,9 +135,10 @@ def main():
         elif opcao == "0":
             print("Saindo do sistema...")
             break
-        
+
         else:
             print("Opção inválida!")
+
 
 if __name__ == "__main__":
     main()
