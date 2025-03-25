@@ -3,7 +3,10 @@ from db import get_connection
 
 class VendedorService:
     def inserir():
-        matricula = input("Matrícula (8 caracteres): ")
+        matricula = input("Matrícula (8 caracteres): ").strip()
+        if len(matricula) > 8:
+            print("Erro: A matrícula deve conter exatamente 8 caracteres.")
+            return
         nome = input("Nome do vendedor: ")
         comissao = input("Comissão (opcional, deixe vazio se não quiser): ")
         senha = input("Senha: ")
@@ -53,7 +56,7 @@ class VendedorService:
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute('SELECT matricula, nome, comissao, senha FROM cadastro.vendedor WHERE nome ILIKE %s', (f'%{nome}%'))
+        cur.execute('SELECT matricula, nome, comissao, senha FROM cadastro.vendedor WHERE nome ILIKE %s', (f'%{nome}%',))
         vendedores = cur.fetchall()
         
         if vendedores:
