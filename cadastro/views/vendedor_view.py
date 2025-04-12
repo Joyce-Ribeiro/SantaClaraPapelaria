@@ -3,12 +3,40 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from cadastro.models.vendedor import Vendedor
 from cadastro.serializers.vendedor_serializer import VendedorSerializer
+from rest_framework.permissions import AllowAny
+from rest_framework.parsers import JSONParser
 
 class VendedorViewSet(viewsets.ModelViewSet):
     queryset = Vendedor.objects.all()
     serializer_class = VendedorSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['nome']
+
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    def cadastrar(self, request):
+        """
+        Cadastra um vendedor.
+        """
+        matricula = request.data.get('matricula')
+        nome = request.data.get('nome')
+        senha = request.data.get('senha')
+        comissao = request.data.get('comissao', None)
+
+        if not matricula or not nome or not senha:
+            return Response({'erro': 'Matrícula, nome e senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if len(matricula) != 8:
+            return Response({'erro': 'A matrícula deve conter exatamente 8 caracteres.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        vendedor = Vendedor.objects.create(
+            matricula=matricula,
+            nome=nome,
+            senha=senha,
+            comissao=comissao
+        )
+
+        return Response({'mensagem': f'Vendedor {vendedor.nome} cadastrado com sucesso.', 'matricula': vendedor.matricula},
+                        status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'])
     def inserir(self, request):
@@ -78,3 +106,20 @@ class VendedorViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_200_OK)
         except Vendedor.DoesNotExist:
             return Response({"erro": "Vendedor não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], parser_classes=[JSONParser])
+    def autenticar(self, request):
+        """
+        Autentica um vendedor com código (matrícula) e senha.
+        """
+        codigo = request.data.get('código')  # <-- com acento
+        senha = request.data.get('senha')
+
+        if not codigo or not senha:
+            return Response({'erro': 'Código e senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            vendedor = Vendedor.objects.get(matricula=codigo, senha=senha)
+            return Response({'matricula': vendedor.matricula})
+        except Vendedor.DoesNotExist:
+            return Response({'matricula': None})
