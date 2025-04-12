@@ -129,6 +129,7 @@ USE_TZ = True
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
+    'DEFAULT_FILTER_BACKENDS': ['rest_framework.filters.SearchFilter'],
 }
 
 STATIC_URL = '/static/'
