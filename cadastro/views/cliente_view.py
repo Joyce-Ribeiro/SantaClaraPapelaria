@@ -6,7 +6,9 @@ from django.shortcuts import get_object_or_404
 from cadastro.models.cliente import Cliente
 from cadastro.serializers.cliente_serializer import ClienteSerializer
 from rest_framework.permissions import AllowAny
-from rest_framework.parsers import JSONParser
+
+from django.db.models import Case, When, Value, IntegerField
+from comercial.models.ordem_servico import OrdemServico 
 
 class ClienteViewSet(viewsets.ModelViewSet):
     queryset = Cliente.objects.all()
@@ -94,3 +96,59 @@ class ClienteViewSet(viewsets.ModelViewSet):
             return Response({'id_cliente': cliente.id_cliente})
         except Cliente.DoesNotExist:
             return Response({'id_cliente': None})
+    
+    @action(detail=False, methods=['get'], url_path='resumo-por-cliente')
+    def resumo_por_cliente(self, request):
+        id_cliente = request.query_params.get('id_cliente')
+        if not id_cliente:
+            return Response({'erro': 'Parâmetro "id_cliente" é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        cliente = get_object_or_404(Cliente, id_cliente=id_cliente)
+
+        ordering = Case(
+            When(pedido__pagamento__status_pagamento='pendente', then=Value(0)),
+            When(pedido__pagamento__status_pagamento='recusado', then=Value(1)),
+            When(pedido__pagamento__status_pagamento='confirmado', then=Value(2)),
+            default=Value(3),
+            output_field=IntegerField()
+        )
+
+        ordens = OrdemServico.objects.select_related(
+            'pedido__pagamento'
+        ).prefetch_related(
+            'pedido__itens_pedido__produto'
+        ).filter(
+            cliente=cliente
+        ).annotate(
+            ordem_status=ordering
+        ).order_by('ordem_status')
+
+        resultado = []
+        for ordem in ordens:
+            pedido = ordem.pedido
+            pagamento = getattr(pedido, 'pagamento', None)
+
+            produtos_info = []
+            valor_total = 0
+
+            for item in pedido.itens_pedido.all():
+                subtotal = item.quantidade * item.produto.valor_produto
+                valor_total += subtotal
+                produtos_info.append({
+                    "nome_produto": item.produto.nome,
+                    "quantidade": item.quantidade,
+                    "valor_unitario": float(item.produto.valor_produto),
+                    "subtotal": float(subtotal)
+                })
+
+            resultado.append({
+                "id_pedido": pedido.id_pedido,
+                "produtos": produtos_info,
+                "valor_total": round(valor_total, 2),
+                "status_pagamento": pagamento.status_pagamento if pagamento else "sem pagamento"
+            })
+
+        return Response({
+            "cliente": cliente.nome,
+            "pedidos": resultado
+        }, status=status.HTTP_200_OK)
