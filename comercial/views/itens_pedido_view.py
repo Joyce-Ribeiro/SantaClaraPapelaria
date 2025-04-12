@@ -9,6 +9,8 @@ from comercial.models.ordem_servico import OrdemServico
 from cadastro.models.cliente import Cliente
 from cadastro.models.produto import Produto
 from santaclara.service.auxiliar_funcao import FuncoesUteis
+from comercial.models.pagamento import Pagamento
+from django.utils import timezone
 
 
 class ItensPedidoViewSet(viewsets.ModelViewSet):
@@ -60,25 +62,32 @@ class ItensPedidoViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"erro": f"Erro ao adicionar item ao pedido: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
+
     @action(detail=False, methods=['post'])
     def criar_pedido_com_itens(self, request):
         """
         Cria um novo pedido com os produtos informados e vincula a um cliente.
-        Exemplo de payload:
+        Também registra o pagamento com status 'pendente'.
+        Payload exemplo:
         {
             "idcliente": [1],
-            "idproduto": [1, 2, 3]
+            "idproduto": [1, 2, 3],
+            "forma_pagamento": "pix"
         }
         """
         idcliente = request.data.get("idcliente", [])
         idprodutos = request.data.get("idproduto", [])
+        forma_pagamento = request.data.get("forma_pagamento")
 
         if not idcliente:
             return Response({"erro": "Cliente não informado."}, status=status.HTTP_400_BAD_REQUEST)
 
-        idcliente = idcliente[0]  # Assume o primeiro cliente da lista
+        idcliente = idcliente[0]  # Assume o primeiro cliente
         if not Cliente.objects.filter(id_cliente=idcliente).exists():
             return Response({"erro": "Cliente não encontrado."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not forma_pagamento or forma_pagamento not in dict(Pagamento.FORMAS_PAGAMENTO):
+            return Response({"erro": "Forma de pagamento inválida ou não informada."}, status=status.HTTP_400_BAD_REQUEST)
 
         for id_prod in idprodutos:
             if not Produto.objects.filter(id_produto=id_prod).exists():
@@ -97,14 +106,21 @@ class ItensPedidoViewSet(viewsets.ModelViewSet):
                 ItensPedido.objects.create(
                     pedido=pedido,
                     produto_id=id_prod,
-                    quantidade=1  # Padrão
+                    quantidade=1
                 )
 
+            # Cria o Pagamento
+            pagamento = Pagamento.objects.create(
+                pedido=pedido,
+                forma_pagamento=forma_pagamento,
+                status_pagamento='pendente'
+            )
+
             return Response({
-                "message": "Pedido e itens criados com sucesso!",
+                "message": "Pedido, itens e pagamento criados com sucesso!",
                 "id_pedido": pedido.id_pedido,
-                "id_cliente": idcliente,
-                "produtos": idprodutos
+                "id_pagamento": pagamento.id_pagamento,
+                "status_pagamento": pagamento.status_pagamento
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:

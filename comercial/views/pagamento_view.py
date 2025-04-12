@@ -1,29 +1,31 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.permissions import AllowAny
 from comercial.models.pagamento import Pagamento
-from comercial.serializers.pagamento_serializer import PagamentoSerializer
-from django.db import transaction
+from cadastro.models.pedido import Pedido
+import uuid
 
-class PagamentoViewSet(viewsets.ModelViewSet):
-    queryset = Pagamento.objects.all()
-    serializer_class = PagamentoSerializer
+class PagamentoViewSet(viewsets.ViewSet):
+    permission_classes = [AllowAny]
 
-    def perform_create(self, serializer):
-        # Obter o pedido relacionado ao pagamento
-        pedido = serializer.validated_data['pedido']
+    @action(detail=False, methods=['post'])
+    def atualizar_status(self, request):
+        id_pedido = request.data.get('id_pedido')
+        novo_status = request.data.get('status')
 
-        # Verificar se o estoque de todos os produtos no pedido é suficiente
-        for item in pedido.itens_pedido.all():
-            if item.produto.estoque < item.quantidade:
-                # Caso o estoque seja insuficiente, retornamos um erro
-                return Response(
-                    {'detail': f'Produto {item.produto.nome} não tem estoque suficiente.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        
-        # Se todos os produtos tiverem estoque suficiente, criamos o pagamento
-        with transaction.atomic():
-            serializer.save()
+        if not id_pedido or not novo_status:
+            return Response({'erro': 'id_pedido e status são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        try:
+            pagamento = Pagamento.objects.get(pedido__id=uuid.UUID(id_pedido) if isinstance(id_pedido, str) else id_pedido)
+        except Pagamento.DoesNotExist:
+            return Response({'erro': 'Pagamento não encontrado para o pedido informado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if novo_status not in dict(Pagamento.STATUS_PAGAMENTO):
+            return Response({'erro': 'Status inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        pagamento.status_pagamento = novo_status
+        pagamento.save()
+
+        return Response({'mensagem': f'Status do pagamento atualizado para {novo_status}.'}, status=status.HTTP_200_OK)
