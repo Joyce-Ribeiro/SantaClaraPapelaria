@@ -2,7 +2,7 @@ from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from cadastro.models.vendedor import Vendedor
-from cadastro.serializers.vendedor_serializer import VendedorSerializer
+from cadastro.serializers.vendedor_serializer import (VendedorSerializer, AutenticacaoVendedorSerializer)
 from rest_framework.permissions import AllowAny
 from rest_framework.parsers import JSONParser
 
@@ -107,13 +107,14 @@ class VendedorViewSet(viewsets.ModelViewSet):
         except Vendedor.DoesNotExist:
             return Response({"erro": "Vendedor não encontrado."}, status=status.HTTP_404_NOT_FOUND)
         
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny], parser_classes=[JSONParser])
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='autenticar')
     def autenticar(self, request):
         """
-        Autentica um vendedor com código (matrícula) e senha.
+        Autentica um vendedor com código (matrícula) e senha via GET.
+        Exemplo: /api/vendedores/autenticar/?codigo=AE200403&senha=74185296
         """
-        codigo = request.data.get('código')  # <-- com acento
-        senha = request.data.get('senha')
+        codigo = request.query_params.get('codigo')
+        senha = request.query_params.get('senha')
 
         if not codigo or not senha:
             return Response({'erro': 'Código e senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
