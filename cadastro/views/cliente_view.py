@@ -75,20 +75,22 @@ class ClienteViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     # POST /api/clientes/autenticar/
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny], parser_classes=[JSONParser])
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='autenticar')
     def autenticar(self, request):
-        codigo = request.data.get('código')  # com acento mesmo
-        senha = request.data.get('senha')
+        telefone = request.query_params.get('telefone')  # <-- Agora usa "telefone" diretamente
+        senha = request.query_params.get('senha')
 
-        if not codigo or not senha:
-            return Response({'erro': 'Código e senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not telefone or not senha:
+            return Response({'erro': 'Telefone e senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Remove qualquer caractere que não seja número
-        telefone_normalizado = re.sub(r'\D', '', codigo)
+        # Normaliza: remove tudo que não for número
+        telefone_normalizado = re.sub(r'\D', '', telefone)
 
         try:
-            cliente = Cliente.objects.get(telefone__regex=r'\D*'.join(telefone_normalizado), senha=senha)
+            cliente = Cliente.objects.get(
+                telefone__regex=r'\D*'.join(telefone_normalizado),
+                senha=senha
+            )
             return Response({'id_cliente': cliente.id_cliente})
         except Cliente.DoesNotExist:
             return Response({'id_cliente': None})
-
