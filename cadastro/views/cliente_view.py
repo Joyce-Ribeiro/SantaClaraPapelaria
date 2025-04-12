@@ -1,3 +1,4 @@
+import re
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -76,14 +77,17 @@ class ClienteViewSet(viewsets.ModelViewSet):
     # POST /api/clientes/autenticar/
     @action(detail=False, methods=['post'], permission_classes=[AllowAny], parser_classes=[JSONParser])
     def autenticar(self, request):
-        codigo = request.data.get('código')  # <-- com acento mesmo
+        codigo = request.data.get('código')  # com acento mesmo
         senha = request.data.get('senha')
 
         if not codigo or not senha:
             return Response({'erro': 'Código e senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Remove qualquer caractere que não seja número
+        telefone_normalizado = re.sub(r'\D', '', codigo)
+
         try:
-            cliente = Cliente.objects.get(telefone=codigo, senha=senha)
+            cliente = Cliente.objects.get(telefone__regex=r'\D*'.join(telefone_normalizado), senha=senha)
             return Response({'id_cliente': cliente.id_cliente})
         except Cliente.DoesNotExist:
             return Response({'id_cliente': None})
