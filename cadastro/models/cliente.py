@@ -6,6 +6,7 @@ class Cliente(models.Model):
     telefone = models.CharField(max_length=15)
     senha = models.CharField(max_length=255)
     email = models.CharField(max_length=30, null=True, blank=True)
+    cliente_especial = models.BooleanField(default=False)  # Novo campo
 
     class Meta:
         db_table = '"cadastro"."cliente"'  
