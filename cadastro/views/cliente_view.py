@@ -99,11 +99,11 @@ class ClienteViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'], url_path='resumo-por-cliente')
     def resumo_por_cliente(self, request):
-        id_cliente = request.query_params.get('id_cliente')
-        if not id_cliente:
-            return Response({'erro': 'Parâmetro "id_cliente" é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
+        telefone = request.query_params.get('telefone')
+        if not telefone:
+            return Response({'erro': 'Parâmetro "telefone" é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        cliente = get_object_or_404(Cliente, id_cliente=id_cliente)
+        cliente = get_object_or_404(Cliente, telefone=telefone)
 
         ordering = Case(
             When(pedido__pagamento__status_pagamento='pendente', then=Value(0)),
@@ -150,5 +150,6 @@ class ClienteViewSet(viewsets.ModelViewSet):
 
         return Response({
             "cliente": cliente.nome,
+            "telefone": cliente.telefone,
             "pedidos": resultado
         }, status=status.HTTP_200_OK)
