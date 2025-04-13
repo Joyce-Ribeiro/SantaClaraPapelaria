@@ -124,3 +124,68 @@ class ProdutoViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"erro": f"Erro ao registrar entrada de estoque: {str(e)}"},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    @action(detail=False, methods=['get'], url_path='filtrar')
+    def filtrar(self, request):
+        nome = request.query_params.get('nome')
+        preco_min = request.query_params.get('preco_min')
+        preco_max = request.query_params.get('preco_max')
+        fornecido_em_mari = request.query_params.get('fornecido_em_mari') == 'true'
+
+        produtos = Produto.objects.all()
+
+        if nome:
+            produtos = produtos.filter(nome__icontains=nome)
+
+        if preco_min:
+            produtos = produtos.filter(valor_produto__gte=preco_min)
+
+        if preco_max:
+            produtos = produtos.filter(valor_produto__lte=preco_max)
+
+        if fornecido_em_mari:
+            produtos = produtos.filter(fornecimentos__fornecedor__nome__iexact="Mari").distinct()
+
+        dados = [{
+            'cod_produto': p.cod_produto,
+            'nome': p.nome,
+            'valor_produto': float(p.valor_produto),
+            'estoque': p.estoque
+        } for p in produtos]
+
+        return Response(dados, status=status.HTTP_200_OK)
+
+    
+    @action(detail=False, methods=['get'], url_path='filtrar-vendedor')
+    def filtrar_vendedor(self, request):
+        nome = request.query_params.get('nome')
+        preco_min = request.query_params.get('preco_min')
+        preco_max = request.query_params.get('preco_max')
+        fornecido_em_mari = request.query_params.get('fornecido_em_mari') == 'true'
+        estoque_baixo = request.query_params.get('estoque_baixo') == 'true'
+
+        produtos = Produto.objects.all()
+
+        if nome:
+            produtos = produtos.filter(nome__icontains=nome)
+
+        if preco_min:
+            produtos = produtos.filter(valor_produto__gte=preco_min)
+
+        if preco_max:
+            produtos = produtos.filter(valor_produto__lte=preco_max)
+
+        if fornecido_em_mari:
+            produtos = produtos.filter(fornecimentos__fornecedor__nome__iexact="Mari").distinct()
+
+        if estoque_baixo:
+            produtos = produtos.filter(estoque__lt=5)
+
+        dados = [{
+            'cod_produto': p.cod_produto,
+            'nome': p.nome,
+            'valor_produto': float(p.valor_produto),
+            'estoque': p.estoque
+        } for p in produtos]
+
+        return Response(dados, status=status.HTTP_200_OK)
