@@ -44,6 +44,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
     def resumo_pedidos(self, request):
         from comercial.models.ordem_servico import OrdemServico
         from comercial.models.pagamento import Pagamento
+        from django.db.models import Case, When, Value, IntegerField
 
         ordering = Case(
             When(pedido__pagamento__status_pagamento='pendente', then=Value(0)),
@@ -74,6 +75,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
             ]
 
             resultado.append({
+                "id_pedido": pedido.id,
                 "nome_cliente": cliente.nome if cliente else None,
                 "nome_vendedor": vendedor.nome if vendedor else None,
                 "produtos": produtos_info,
@@ -81,6 +83,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
             })
 
         return Response(resultado, status=status.HTTP_200_OK)
+
     
     @action(detail=False, methods=['post'], url_path='atualizar-vendedor-pagamento')
     def atualizar_vendedor_pagamento(self, request):
