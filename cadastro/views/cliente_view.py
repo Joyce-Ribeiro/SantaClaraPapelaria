@@ -151,8 +151,4 @@ class ClienteViewSet(viewsets.ModelViewSet):
                 "status_pagamento": pagamento.status_pagamento if pagamento else "sem pagamento"
             })
 
-        return Response({
-            "cliente": cliente.nome,
-            "telefone": cliente.telefone,
-            "pedidos": resultado
-        }, status=status.HTTP_200_OK)
+        return Response(resultado, status=status.HTTP_200_OK)
