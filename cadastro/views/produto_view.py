@@ -1,5 +1,6 @@
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
+from django.db import connection
 from rest_framework.response import Response
 from cadastro.models.produto import Produto
 from cadastro.serializers.produto_serializer import ProdutoSerializer
@@ -98,3 +99,28 @@ class ProdutoViewSet(viewsets.ModelViewSet):
             return Response({"message": "Produto removido com sucesso!"}, status=status.HTTP_200_OK)
         except Produto.DoesNotExist:
             return Response({"erro": "Produto não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=False, methods=['post'])
+    def registrar_entrada_estoque(self, request):
+        """
+        Registra entrada de estoque usando procedure.
+        Espera: p_cod_produto, p_quantidade, p_id_fornecedor, p_id_distribuidor
+        """
+        try:
+            produto_id = int(request.data.get('p_cod_produto'))
+            quantidade = int(request.data.get('p_quantidade'))
+            fornecedor_id = int(request.data.get('p_id_fornecedor'))
+            distribuidor_id = int(request.data.get('p_id_distribuidor'))
+        except (TypeError, ValueError):
+            return Response({"erro": "Todos os campos devem ser inteiros válidos."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("CALL comercial.registrar_entrada_estoque(%s, %s, %s, %s)", [
+                    produto_id, quantidade, fornecedor_id, distribuidor_id
+                ])
+            return Response({"message": "Entrada de estoque registrada com sucesso!"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"erro": f"Erro ao registrar entrada de estoque: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
