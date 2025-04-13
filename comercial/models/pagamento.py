@@ -25,3 +25,5 @@ class Pagamento(models.Model):
 
     def __str__(self):
         return f"Pagamento {self.id_pagamento} - {self.forma_pagamento} - {self.status_pagamento}"
+    
+    
