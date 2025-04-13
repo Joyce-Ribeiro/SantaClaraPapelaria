@@ -79,13 +79,13 @@ class ClienteViewSet(viewsets.ModelViewSet):
     # POST /api/clientes/autenticar/
     @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='autenticar')
     def autenticar(self, request):
-        telefone = request.query_params.get('telefone')  # <-- Agora usa "telefone" diretamente
+        telefone = request.query_params.get('telefone')
         senha = request.query_params.get('senha')
 
         if not telefone or not senha:
             return Response({'erro': 'Telefone e senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Normaliza: remove tudo que não for número
+        # Remove tudo que não for número (normalização)
         telefone_normalizado = re.sub(r'\D', '', telefone)
 
         try:
@@ -93,9 +93,12 @@ class ClienteViewSet(viewsets.ModelViewSet):
                 telefone__regex=r'\D*'.join(telefone_normalizado),
                 senha=senha
             )
-            return Response({'id_cliente': cliente.id_cliente})
+            return Response({
+                'id_cliente': cliente.id_cliente,
+                'telefone': cliente.telefone
+            })
         except Cliente.DoesNotExist:
-            return Response({'id_cliente': None})
+            return Response({'id_cliente': None, 'telefone': None})
     
     @action(detail=False, methods=['get'], url_path='resumo-por-cliente')
     def resumo_por_cliente(self, request):
