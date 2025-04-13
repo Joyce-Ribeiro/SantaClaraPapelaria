@@ -68,12 +68,7 @@ class ItensPedidoViewSet(viewsets.ModelViewSet):
         """
         Cria um novo pedido com os produtos informados e vincula a um cliente.
         Também registra o pagamento com status 'pendente'.
-        Payload exemplo:
-        {
-            "idcliente": [1],
-            "idproduto": [1, 2, 3],
-            "forma_pagamento": "pix"
-        }
+        Clientes especiais recebem 10% de desconto nos itens.
         """
         idcliente = request.data.get("idcliente", [])
         idprodutos = request.data.get("idproduto", [])
@@ -82,8 +77,10 @@ class ItensPedidoViewSet(viewsets.ModelViewSet):
         if not idcliente:
             return Response({"erro": "Cliente não informado."}, status=status.HTTP_400_BAD_REQUEST)
 
-        idcliente = idcliente[0]  # Assume o primeiro cliente
-        if not Cliente.objects.filter(id_cliente=idcliente).exists():
+        idcliente = idcliente[0]
+        try:
+            cliente = Cliente.objects.get(id_cliente=idcliente)
+        except Cliente.DoesNotExist:
             return Response({"erro": "Cliente não encontrado."}, status=status.HTTP_400_BAD_REQUEST)
 
         if not forma_pagamento or forma_pagamento not in dict(Pagamento.FORMAS_PAGAMENTO):
@@ -95,21 +92,26 @@ class ItensPedidoViewSet(viewsets.ModelViewSet):
                                 status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Cria o Pedido
             pedido = Pedido.objects.create(data_pedido=timezone.now())
+            OrdemServico.objects.create(cliente=cliente, pedido=pedido)
 
-            # Cria a Ordem de Serviço vinculando o cliente ao pedido
-            OrdemServico.objects.create(cliente_id=idcliente, pedido=pedido)
+            valor_total = 0
 
-            # Cria os ItensPedido
             for id_prod in idprodutos:
+                produto = Produto.objects.get(id_produto=id_prod)
+
+                valor_unitario = produto.valor_produto
+                if cliente.cliente_especial:
+                    valor_unitario *= 0.9  # aplica 10% de desconto
+
                 ItensPedido.objects.create(
                     pedido=pedido,
-                    produto_id=id_prod,
+                    produto=produto,
                     quantidade=1
                 )
 
-            # Cria o Pagamento
+                valor_total += valor_unitario
+
             pagamento = Pagamento.objects.create(
                 pedido=pedido,
                 forma_pagamento=forma_pagamento,
@@ -120,7 +122,9 @@ class ItensPedidoViewSet(viewsets.ModelViewSet):
                 "message": "Pedido, itens e pagamento criados com sucesso!",
                 "id_pedido": pedido.id_pedido,
                 "id_pagamento": pagamento.id_pagamento,
-                "status_pagamento": pagamento.status_pagamento
+                "status_pagamento": pagamento.status_pagamento,
+                "cliente_especial": cliente.cliente_especial,
+                "valor_total": round(valor_total, 2)
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
