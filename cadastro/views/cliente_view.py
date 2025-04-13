@@ -76,7 +76,7 @@ class ClienteViewSet(viewsets.ModelViewSet):
             return Response({'mensagem': 'Cliente alterado com sucesso.', 'cliente': serializer.data})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    # POST /api/clientes/autenticar/
+    # GET /api/clientes/autenticar/
     @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='autenticar')
     def autenticar(self, request):
         telefone = request.query_params.get('telefone')
@@ -95,10 +95,16 @@ class ClienteViewSet(viewsets.ModelViewSet):
             )
             return Response({
                 'id_cliente': cliente.id_cliente,
+                'nome': cliente.nome,
                 'telefone': cliente.telefone
             })
         except Cliente.DoesNotExist:
-            return Response({'id_cliente': None, 'telefone': None})
+            return Response({
+                'id_cliente': None,
+                'nome': None,
+                'telefone': None
+            })
+
     
     @action(detail=False, methods=['get'], url_path='resumo-por-cliente')
     def resumo_por_cliente(self, request):
