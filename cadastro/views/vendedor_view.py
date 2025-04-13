@@ -121,6 +121,12 @@ class VendedorViewSet(viewsets.ModelViewSet):
 
         try:
             vendedor = Vendedor.objects.get(matricula=codigo, senha=senha)
-            return Response({'matricula': vendedor.matricula})
+            return Response({
+                'matricula': vendedor.matricula,
+                'nome': vendedor.nome
+            })
         except Vendedor.DoesNotExist:
-            return Response({'matricula': None})
+            return Response({
+                'matricula': None,
+                'nome': None
+            })
