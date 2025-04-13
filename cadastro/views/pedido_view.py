@@ -54,10 +54,13 @@ class PedidoViewSet(viewsets.ModelViewSet):
             output_field=IntegerField()
         )
 
-        ordens = OrdemServico.objects.select_related('cliente', 'vendedor', 'pedido__pagamento') \
-            .prefetch_related('pedido__itens_pedido__produto') \
-            .annotate(ordem_status=ordering) \
-            .order_by('ordem_status')
+        ordens = OrdemServico.objects.select_related(
+            'cliente', 'vendedor', 'pedido__pagamento'
+        ).prefetch_related(
+            'pedido__itens_pedido__produto'
+        ).annotate(
+            ordem_status=ordering
+        ).order_by('ordem_status')
 
         resultado = []
         for ordem in ordens:
@@ -75,10 +78,11 @@ class PedidoViewSet(viewsets.ModelViewSet):
             ]
 
             resultado.append({
-                "id_pedido": pedido.id_pedido,  # 🔧 CORRIGIDO AQUI
+                "id_pedido": pedido.id_pedido,
                 "nome_cliente": cliente.nome if cliente else None,
                 "nome_vendedor": vendedor.nome if vendedor else None,
                 "produtos": produtos_info,
+                "forma_pagamento": pagamento.forma_pagamento if pagamento else "sem pagamento",
                 "status_pagamento": pagamento.status_pagamento if pagamento else "sem pagamento"
             })
 
