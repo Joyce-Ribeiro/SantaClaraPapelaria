@@ -75,7 +75,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
             ]
 
             resultado.append({
-                "id_pedido": pedido.id,
+                "id_pedido": pedido.id_pedido,  # 🔧 CORRIGIDO AQUI
                 "nome_cliente": cliente.nome if cliente else None,
                 "nome_vendedor": vendedor.nome if vendedor else None,
                 "produtos": produtos_info,
@@ -83,6 +83,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
             })
 
         return Response(resultado, status=status.HTTP_200_OK)
+
 
     
     @action(detail=False, methods=['post'], url_path='atualizar-vendedor-pagamento')
