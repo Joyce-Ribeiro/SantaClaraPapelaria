@@ -148,6 +148,7 @@ class ClienteViewSet(viewsets.ModelViewSet):
                 "id_pedido": pedido.id_pedido,
                 "produtos": produtos_info,
                 "valor_total": round(valor_total, 2),
+                "forma_pagamento": pagamento.forma_pagamento if pagamento else "sem pagamento",
                 "status_pagamento": pagamento.status_pagamento if pagamento else "sem pagamento"
             })
 
