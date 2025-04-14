@@ -25,7 +25,7 @@ class ClienteViewSet(viewsets.ModelViewSet):
         telefone = request.data.get('telefone')
         senha = request.data.get('senha')
         email = request.data.get('email', None)
-        cliente_especial = request.data.get('cliente_especial', False)
+        cidade = request.data.get('cidade', None)
 
         if not nome or not telefone or not senha:
             return Response({'erro': 'Nome, telefone e senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -35,11 +35,14 @@ class ClienteViewSet(viewsets.ModelViewSet):
             telefone=telefone,
             senha=senha,
             email=email,
-            cliente_especial=cliente_especial
+            cidade=cidade
         )
 
-        return Response({'mensagem': f'Cliente {cliente.nome} cadastrado com sucesso.', 'id_cliente': cliente.id_cliente},
-                        status=status.HTTP_201_CREATED)
+        return Response({
+            'mensagem': f'Cliente {cliente.nome} cadastrado com sucesso.',
+            'id_cliente': cliente.id_cliente
+        }, status=status.HTTP_201_CREATED)
+
     
     # GET /api/clientes/pesquisar/?nome=xxx
     @action(detail=False, methods=['get'])
@@ -85,7 +88,6 @@ class ClienteViewSet(viewsets.ModelViewSet):
         if not telefone or not senha:
             return Response({'erro': 'Telefone e senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Remove tudo que não for número (normalização)
         telefone_normalizado = re.sub(r'\D', '', telefone)
 
         try:
@@ -96,14 +98,17 @@ class ClienteViewSet(viewsets.ModelViewSet):
             return Response({
                 'id_cliente': cliente.id_cliente,
                 'nome': cliente.nome,
-                'telefone': cliente.telefone
+                'telefone': cliente.telefone,
+                'cidade': cliente.cidade
             })
         except Cliente.DoesNotExist:
             return Response({
                 'id_cliente': None,
                 'nome': None,
-                'telefone': None
+                'telefone': None,
+                'cidade': None
             })
+
 
     
     @action(detail=False, methods=['get'], url_path='resumo-por-cliente')
@@ -140,13 +145,23 @@ class ClienteViewSet(viewsets.ModelViewSet):
             produtos_info = []
             valor_total = 0
 
+            # Aplica a lógica de desconto: cidade ou cupom
+            cidade_desconto = cliente.cidade and cliente.cidade.lower() == "sousa"
+            cupom_desconto = pedido.cupom and pedido.cupom.lower() in ["onepiece", "flamengo"]
+            tem_desconto = cidade_desconto or cupom_desconto
+
             for item in pedido.itens_pedido.all():
-                subtotal = item.quantidade * item.produto.valor_produto
+                valor_unitario = item.produto.valor_produto
+                if tem_desconto:
+                    valor_unitario *= 0.9  # aplica 10% de desconto
+
+                subtotal = item.quantidade * valor_unitario
                 valor_total += subtotal
+
                 produtos_info.append({
                     "nome_produto": item.produto.nome,
                     "quantidade": item.quantidade,
-                    "valor_unitario": float(item.produto.valor_produto),
+                    "valor_unitario": float(valor_unitario),
                     "subtotal": float(subtotal)
                 })
 
@@ -155,7 +170,8 @@ class ClienteViewSet(viewsets.ModelViewSet):
                 "produtos": produtos_info,
                 "valor_total": round(valor_total, 2),
                 "forma_pagamento": pagamento.forma_pagamento if pagamento else "sem pagamento",
-                "status_pagamento": pagamento.status_pagamento if pagamento else "sem pagamento"
+                "status_pagamento": pagamento.status_pagamento if pagamento else "sem pagamento",
+                "desconto_aplicado": tem_desconto
             })
 
         return Response(resultado, status=status.HTTP_200_OK)

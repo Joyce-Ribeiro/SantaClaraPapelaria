@@ -69,24 +69,42 @@ class PedidoViewSet(viewsets.ModelViewSet):
             pedido = ordem.pedido
             pagamento = getattr(pedido, 'pagamento', None)
 
-            produtos_info = [
-                {
+            # Lógica de desconto
+            cidade_desconto = cliente.cidade and cliente.cidade.lower() == "sousa"
+            cupom_desconto = pedido.cupom and pedido.cupom.lower() in ["onepiece", "flamengo"]
+            tem_desconto = cidade_desconto or cupom_desconto
+
+            valor_total = 0
+            produtos_info = []
+
+            for item in pedido.itens_pedido.all():
+                valor_unitario = item.produto.valor_produto
+                if tem_desconto:
+                    valor_unitario *= 0.9
+
+                subtotal = item.quantidade * valor_unitario
+                valor_total += subtotal
+
+                produtos_info.append({
                     "nome_produto": item.produto.nome,
-                    "quantidade": item.quantidade
-                }
-                for item in pedido.itens_pedido.all()
-            ]
+                    "quantidade": item.quantidade,
+                    "valor_unitario": float(valor_unitario),
+                    "subtotal": float(subtotal)
+                })
 
             resultado.append({
                 "id_pedido": pedido.id_pedido,
                 "nome_cliente": cliente.nome if cliente else None,
                 "nome_vendedor": vendedor.nome if vendedor else None,
                 "produtos": produtos_info,
+                "valor_total": round(valor_total, 2),
                 "forma_pagamento": pagamento.forma_pagamento if pagamento else "sem pagamento",
-                "status_pagamento": pagamento.status_pagamento if pagamento else "sem pagamento"
+                "status_pagamento": pagamento.status_pagamento if pagamento else "sem pagamento",
+                "desconto_aplicado": tem_desconto
             })
 
         return Response(resultado, status=status.HTTP_200_OK)
+
 
 
     

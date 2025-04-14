@@ -68,11 +68,12 @@ class ItensPedidoViewSet(viewsets.ModelViewSet):
         """
         Cria um novo pedido com os produtos informados e vincula a um cliente.
         Também registra o pagamento com status 'pendente'.
-        Clientes especiais recebem 10% de desconto nos itens.
+        Clientes de Sousa ou com cupons válidos recebem 10% de desconto nos itens.
         """
         idcliente = request.data.get("idcliente", [])
         idprodutos = request.data.get("idproduto", [])
         forma_pagamento = request.data.get("forma_pagamento")
+        cupom = request.data.get("cupom", "").lower()
 
         if not idcliente:
             return Response({"erro": "Cliente não informado."}, status=status.HTTP_400_BAD_REQUEST)
@@ -92,16 +93,19 @@ class ItensPedidoViewSet(viewsets.ModelViewSet):
                                 status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            pedido = Pedido.objects.create(data_pedido=timezone.now())
+            pedido = Pedido.objects.create(data_pedido=timezone.now(), cupom=cupom)  # Se tiver cupom no model
             OrdemServico.objects.create(cliente=cliente, pedido=pedido)
 
             valor_total = 0
 
+            # Verifica se cliente tem direito a desconto
+            tem_desconto = (cliente.cidade and cliente.cidade.lower() == "sousa") or (cupom in ['onepiece', 'flamengo'])
+
             for id_prod in idprodutos:
                 produto = Produto.objects.get(id_produto=id_prod)
-
                 valor_unitario = produto.valor_produto
-                if cliente.cliente_especial:
+
+                if tem_desconto:
                     valor_unitario *= 0.9  # aplica 10% de desconto
 
                 ItensPedido.objects.create(
@@ -123,8 +127,8 @@ class ItensPedidoViewSet(viewsets.ModelViewSet):
                 "id_pedido": pedido.id_pedido,
                 "id_pagamento": pagamento.id_pagamento,
                 "status_pagamento": pagamento.status_pagamento,
-                "cliente_especial": cliente.cliente_especial,
-                "valor_total": round(valor_total, 2)
+                "valor_total": round(valor_total, 2),
+                "desconto_aplicado": tem_desconto
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
