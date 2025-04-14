@@ -11,6 +11,8 @@ from cadastro.models.produto import Produto
 from santaclara.service.auxiliar_funcao import FuncoesUteis
 from comercial.models.pagamento import Pagamento
 from django.utils import timezone
+from decimal import Decimal
+
 
 
 class ItensPedidoViewSet(viewsets.ModelViewSet):
@@ -108,7 +110,7 @@ class ItensPedidoViewSet(viewsets.ModelViewSet):
                 valor_unitario = produto.valor_produto
 
                 if tem_desconto:
-                    valor_unitario *= 0.9  # aplica 10% de desconto
+                    valor_unitario *= Decimal('0.9')  # aplica 10% de desconto
 
                 ItensPedido.objects.create(
                     pedido=pedido,
