@@ -45,3 +45,8 @@ class DistribuidorViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response({'mensagem': 'Distribuidor alterado com sucesso.', 'distribuidor': serializer.data})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='listar-nomes')
+    def listar_nomes(self, request):
+        distribuidores = Distribuidor.objects.all().values_list('nome', flat=True)
+        return Response({'distribuidores': list(distribuidores)}, status=status.HTTP_200_OK)

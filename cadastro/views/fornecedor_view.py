@@ -41,3 +41,8 @@ class FornecedorViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response({'mensagem': 'Fornecedor alterado com sucesso.', 'fornecedor': serializer.data})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='listar-nomes')
+    def listar_nomes(self, request):
+        fornecedores = Fornecedor.objects.all().values_list('nome', flat=True)
+        return Response({'fornecedores': list(fornecedores)}, status=status.HTTP_200_OK)
