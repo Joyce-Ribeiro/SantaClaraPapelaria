@@ -70,7 +70,10 @@ class PedidoViewSet(viewsets.ModelViewSet):
             pagamento = getattr(pedido, 'pagamento', None)
 
             # Lógica de desconto
-            cidade_desconto = cliente.cidade and cliente.cidade.lower() == "sousa"
+            cidade_desconto = False
+            if cliente and cliente.cidade:
+                cidade_desconto = cliente.cidade.lower() == "sousa"
+            
             cupom_desconto = pedido.cupom and pedido.cupom.lower() in ["onepiece", "flamengo"]
             tem_desconto = cidade_desconto or cupom_desconto
 
@@ -80,7 +83,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
             for item in pedido.itens_pedido.all():
                 valor_unitario = item.produto.valor_produto
                 if tem_desconto:
-                    valor_unitario *= 0.9
+                    valor_unitario *= Decimal('0.9')  # aplica 10% de desconto
 
                 subtotal = item.quantidade * valor_unitario
                 valor_total += subtotal
@@ -104,6 +107,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
             })
 
         return Response(resultado, status=status.HTTP_200_OK)
+
 
 
 
