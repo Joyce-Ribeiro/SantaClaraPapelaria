@@ -7,7 +7,7 @@ from cadastro.models.pedido import Pedido
 from cadastro.serializers.pedido_serializer import PedidoSerializer
 from cadastro.models.vendedor import Vendedor
 from comercial.models.pagamento import Pagamento
-
+from decimal import Decimal
 
 from django.db.models import Case, When, Value, IntegerField
 from comercial.models.ordem_servico import OrdemServico 
@@ -80,7 +80,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
             for item in pedido.itens_pedido.all():
                 valor_unitario = item.produto.valor_produto
                 if tem_desconto:
-                    valor_unitario *= 0.9
+                    valor_unitario *= Decimal('0.9')  # aplica 10% de desconto
 
                 subtotal = item.quantidade * valor_unitario
                 valor_total += subtotal

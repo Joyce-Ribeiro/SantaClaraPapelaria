@@ -137,3 +137,4 @@ class ItensPedidoViewSet(viewsets.ModelViewSet):
 
         except Exception as e:
             return Response({"erro": f"Erro ao criar pedido: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        
