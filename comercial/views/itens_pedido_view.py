@@ -71,7 +71,8 @@ class ItensPedidoViewSet(viewsets.ModelViewSet):
         Clientes de Sousa ou com cupons válidos recebem 10% de desconto nos itens.
         """
         idcliente = request.data.get("idcliente", [])
-        idprodutos = request.data.get("idproduto", [])
+        codprodutos = request.data.get("idproduto", [])  # Continua recebendo como "idproduto", mas usando cod_produto
+
         forma_pagamento = request.data.get("forma_pagamento")
         cupom = request.data.get("cupom", "").lower()
 
@@ -87,22 +88,23 @@ class ItensPedidoViewSet(viewsets.ModelViewSet):
         if not forma_pagamento or forma_pagamento not in dict(Pagamento.FORMAS_PAGAMENTO):
             return Response({"erro": "Forma de pagamento inválida ou não informada."}, status=status.HTTP_400_BAD_REQUEST)
 
-        for id_prod in idprodutos:
-            if not Produto.objects.filter(id_produto=id_prod).exists():
-                return Response({"erro": f"Produto com ID {id_prod} não encontrado."},
+        for cod_prod in codprodutos:
+            if not Produto.objects.filter(cod_produto=cod_prod).exists():
+                return Response({"erro": f"Produto com código {cod_prod} não encontrado."},
                                 status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            pedido = Pedido.objects.create(data_pedido=timezone.now(), cupom=cupom)  # Se tiver cupom no model
+            pedido = Pedido.objects.create(data_pedido=timezone.now(), cupom=cupom)
             OrdemServico.objects.create(cliente=cliente, pedido=pedido)
 
             valor_total = 0
+            tem_desconto = (
+                (cliente.cidade and cliente.cidade.lower() == "sousa")
+                or (cupom in ['onepiece', 'flamengo'])
+            )
 
-            # Verifica se cliente tem direito a desconto
-            tem_desconto = (cliente.cidade and cliente.cidade.lower() == "sousa") or (cupom in ['onepiece', 'flamengo'])
-
-            for id_prod in idprodutos:
-                produto = Produto.objects.get(id_produto=id_prod)
+            for cod_prod in codprodutos:
+                produto = Produto.objects.get(cod_produto=cod_prod)
                 valor_unitario = produto.valor_produto
 
                 if tem_desconto:
