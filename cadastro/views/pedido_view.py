@@ -32,8 +32,8 @@ class PedidoViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def produtos(self, request, pk=None):
-        from comercial.models.itens_pedido import ItensPedido  # se o relacionamento estiver em outra app
-        from cadastro.serializers.produto_serializer import ProdutoSerializer  # certifique-se de que esse existe
+        from comercial.models.itens_pedido import ItensPedido  
+        from cadastro.serializers.produto_serializer import ProdutoSerializer  
 
         itens = ItensPedido.objects.filter(pedido_id=pk).select_related('produto')
         produtos = [item.produto for item in itens]
