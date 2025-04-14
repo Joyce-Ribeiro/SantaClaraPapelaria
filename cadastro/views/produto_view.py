@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from cadastro.models.produto import Produto
 from cadastro.serializers.produto_serializer import ProdutoSerializer
 from comercial.services.fornecimento_service import FornecimentoService
+from cadastro.models.fornecedor import Fornecedor
+from cadastro.models.distribuidor import Distribuidor
 
 class ProdutoViewSet(viewsets.ModelViewSet):
     queryset = Produto.objects.all()
@@ -100,27 +102,45 @@ class ProdutoViewSet(viewsets.ModelViewSet):
         except Produto.DoesNotExist:
             return Response({"erro": "Produto não encontrado."}, status=status.HTTP_404_NOT_FOUND)
     
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], url_path='registrar-entrada-estoque')
     def registrar_entrada_estoque(self, request):
         """
-        Registra entrada de estoque usando procedure.
-        Espera: p_cod_produto, p_quantidade, p_id_fornecedor, p_id_distribuidor
+        Registra entrada de estoque via procedure.
+        Agora espera:
+        - nome_produto
+        - nome_fornecedor
+        - nome_distribuidor
+        - quantidade
         """
+
+        nome_produto = request.data.get('nome_produto')
+        nome_fornecedor = request.data.get('nome_fornecedor')
+        nome_distribuidor = request.data.get('nome_distribuidor')
+        quantidade = request.data.get('quantidade')
+
+        if not (nome_produto and nome_fornecedor and nome_distribuidor and quantidade):
+            return Response({"erro": "Todos os campos são obrigatórios."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            produto_id = int(request.data.get('p_cod_produto'))
-            quantidade = int(request.data.get('p_quantidade'))
-            fornecedor_id = int(request.data.get('p_id_fornecedor'))
-            distribuidor_id = int(request.data.get('p_id_distribuidor'))
-        except (TypeError, ValueError):
-            return Response({"erro": "Todos os campos devem ser inteiros válidos."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            produto = Produto.objects.get(nome__iexact=nome_produto)
+            fornecedor = Fornecedor.objects.get(nome__iexact=nome_fornecedor)
+            distribuidor = Distribuidor.objects.get(nome__iexact=nome_distribuidor)
+            quantidade = int(quantidade)
+        except Produto.DoesNotExist:
+            return Response({"erro": f"Produto '{nome_produto}' não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except Fornecedor.DoesNotExist:
+            return Response({"erro": f"Fornecedor '{nome_fornecedor}' não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except Distribuidor.DoesNotExist:
+            return Response({"erro": f"Distribuidor '{nome_distribuidor}' não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except ValueError:
+            return Response({"erro": "Quantidade deve ser um número inteiro."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             with connection.cursor() as cursor:
                 cursor.execute("CALL comercial.registrar_entrada_estoque(%s, %s, %s, %s)", [
-                    produto_id, quantidade, fornecedor_id, distribuidor_id
+                    produto.cod_produto, quantidade, fornecedor.id_fornecedor, distribuidor.id_distribuidor
                 ])
-            return Response({"message": "Entrada de estoque registrada com sucesso!"}, status=status.HTTP_200_OK)
+            return Response({"mensagem": "Entrada de estoque registrada com sucesso!"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"erro": f"Erro ao registrar entrada de estoque: {str(e)}"},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -189,3 +209,8 @@ class ProdutoViewSet(viewsets.ModelViewSet):
         } for p in produtos]
 
         return Response(dados, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['get'], url_path='listar-nomes')
+    def listar_nomes(self, request):
+        produtos = Produto.objects.all().values('cod_produto', 'nome')
+        return Response({'produtos': list(produtos)}, status=status.HTTP_200_OK)
