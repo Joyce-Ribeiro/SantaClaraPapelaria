@@ -80,7 +80,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
             for item in pedido.itens_pedido.all():
                 valor_unitario = item.produto.valor_produto
                 if tem_desconto:
-                    valor_unitario *= Decimal('0.9')  # aplica 10% de desconto
+                    valor_unitario *= 0.9
 
                 subtotal = item.quantidade * valor_unitario
                 valor_total += subtotal
