@@ -7,6 +7,7 @@ from cadastro.serializers.produto_serializer import ProdutoSerializer
 from comercial.services.fornecimento_service import FornecimentoService
 from cadastro.models.fornecedor import Fornecedor
 from cadastro.models.distribuidor import Distribuidor
+from django.shortcuts import get_object_or_404
 
 class ProdutoViewSet(viewsets.ModelViewSet):
     queryset = Produto.objects.all()
@@ -214,3 +215,20 @@ class ProdutoViewSet(viewsets.ModelViewSet):
     def listar_nomes(self, request):
         produtos = Produto.objects.all().values('cod_produto', 'nome')
         return Response({'produtos': list(produtos)}, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['get'], url_path='buscar-por-id')
+    def buscar_por_id(self, request):
+        """
+        Retorna o nome e o valor do produto a partir do ID informado via query param.
+        Exemplo: /api/produtos/buscar-por-id/?id=1
+        """
+        produto_id = request.query_params.get('id')
+        if not produto_id:
+            return Response({'erro': 'Parâmetro "id" é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        produto = get_object_or_404(Produto, cod_produto=produto_id)
+
+        return Response({
+            'nome': produto.nome,
+            'valor_produto': float(produto.valor_produto)
+        })
