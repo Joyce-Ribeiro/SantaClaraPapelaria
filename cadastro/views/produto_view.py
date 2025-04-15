@@ -234,11 +234,11 @@ class ProdutoViewSet(viewsets.ModelViewSet):
             produtos = produtos.filter(estoque__lt=5)
 
         dados = [{
-            'id': p.cod_produto,
+            'cod_produto': p.cod_produto,
             'nome': p.nome,
             'valor_produto': float(p.valor_produto),
             'estoque': p.estoque,
-            'descricao': p.descricao
+            'desc_produto': p.desc_produto
         } for p in produtos]
 
         return Response(dados, status=status.HTTP_200_OK)
