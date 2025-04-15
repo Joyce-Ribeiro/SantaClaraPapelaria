@@ -4,9 +4,11 @@ from django.db import connection
 from rest_framework.response import Response
 from cadastro.models.produto import Produto
 from cadastro.serializers.produto_serializer import ProdutoSerializer
-from comercial.services.fornecimento_service import FornecimentoService
+from comercial.models.fornecimento import Fornecimento
 from cadastro.models.fornecedor import Fornecedor
 from cadastro.models.distribuidor import Distribuidor
+from django.utils import timezone
+from decimal import Decimal
 from django.shortcuts import get_object_or_404
 
 class ProdutoViewSet(viewsets.ModelViewSet):
@@ -15,22 +17,49 @@ class ProdutoViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['nome']
 
-    @action(detail=False, methods=['post'])
+
+    @action(detail=False, methods=['post'], url_path='inserir-com-fornecedor')
     def inserir_com_fornecedor(self, request):
         """
-        Cadastra um produto e, opcionalmente, adiciona um fornecedor.
+        Cadastra um produto e cria um fornecimento associado.
+        Fornecedor e Distribuidor são buscados por nome.
         """
         nome = request.data.get('nome')
         valor_produto = request.data.get('valor_produto')
         estoque = request.data.get('estoque')
-        desc_produto = request.data.get('desc_produto', None)
+        desc_produto = request.data.get('desc_produto', '')
+        nome_fornecedor = request.data.get('nome_fornecedor')
+        nome_distribuidor = request.data.get('nome_distribuidor', None)
+
+        # Validações iniciais
+        if not nome or not valor_produto or not estoque or not nome_fornecedor:
+            return Response({"erro": "Campos obrigatórios: nome, valor_produto, estoque, nome_fornecedor."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            valor_produto = round(float(valor_produto), 2)
-        except ValueError:
+            valor_produto = round(Decimal(valor_produto), 2)
+        except:
             return Response({"erro": "Valor do produto deve ser numérico com até duas casas decimais."},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        try:
+            estoque = int(estoque)
+        except:
+            return Response({"erro": "Estoque deve ser um número inteiro."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            fornecedor = Fornecedor.objects.get(nome__iexact=nome_fornecedor)
+        except Fornecedor.DoesNotExist:
+            return Response({"erro": f"Fornecedor '{nome_fornecedor}' não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        distribuidor = None
+        if nome_distribuidor:
+            try:
+                distribuidor = Distribuidor.objects.get(nome__iexact=nome_distribuidor)
+            except Distribuidor.DoesNotExist:
+                return Response({"erro": f"Distribuidor '{nome_distribuidor}' não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Criação do produto
         produto = Produto.objects.create(
             nome=nome,
             valor_produto=valor_produto,
@@ -38,19 +67,21 @@ class ProdutoViewSet(viewsets.ModelViewSet):
             desc_produto=desc_produto
         )
 
-        # Verifica se o fornecedor será adicionado
-        adicionar_fornecedor = request.data.get('adicionar_fornecedor', False)
+        try:
+            Fornecimento.objects.create(
+                data=timezone.now(),
+                valor=valor_produto,
+                distribuidor=distribuidor,
+                produto=produto,
+                fornecedor=fornecedor
+            )
+            return Response({
+                "message": f"Produto '{produto.nome}' e fornecimento cadastrados com sucesso."
+            }, status=status.HTTP_201_CREATED)
 
-        if adicionar_fornecedor:
-            sucesso = FornecimentoService.inserir_fornecimento(produto.id)
-            if not sucesso:
-                produto.delete()
-                return Response({"erro": "Erro ao criar fornecimento. Produto não será cadastrado."},
-                                status=status.HTTP_400_BAD_REQUEST)
-            return Response({"message": f"Fornecimento cadastrado para o produto {produto.nome}."},
-                            status=status.HTTP_201_CREATED)
-
-        return Response({"message": f"Produto {produto.nome} cadastrado com sucesso!"}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            produto.delete()
+            return Response({"erro": f"Erro ao criar fornecimento: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])
     def alterar(self, request, pk=None):
