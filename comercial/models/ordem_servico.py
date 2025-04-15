@@ -11,6 +11,9 @@ class OrdemServico(models.Model):
     
     class Meta:
         db_table = '"comercial"."ordem_servico"'
+        constraints = [
+            models.UniqueConstraint(fields=['pedido'], name='unique_pedido_ordem_servico')  # Adiciona a restrição de unicidade
+        ]
 
     def __str__(self):
         return f"Ordem {self.id_ordem} - {self.cliente or self.vendedor} - Pedido {self.pedido.id_pedido}"
