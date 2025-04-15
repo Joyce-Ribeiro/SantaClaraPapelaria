@@ -18,7 +18,7 @@ class PagamentoViewSet(viewsets.ViewSet):
             return Response({'erro': 'id_pedido e status são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            pagamento = Pagamento.objects.get(pedido__id=uuid.UUID(id_pedido) if isinstance(id_pedido, str) else id_pedido)
+            pagamento = Pagamento.objects.get(pedido_id=uuid.UUID(id_pedido) if isinstance(id_pedido, str) else id_pedido)
             pedido = pagamento.pedido  # Obtém o pedido associado ao pagamento
         except Pagamento.DoesNotExist:
             return Response({'erro': 'Pagamento não encontrado para o pedido informado.'}, status=status.HTTP_404_NOT_FOUND)
