@@ -177,7 +177,7 @@ class ProdutoViewSet(viewsets.ModelViewSet):
         return Response(dados, status=status.HTTP_200_OK)
 
     
-    @action(detail=False, methods=['get'], url_path='filtrar-vendedor')
+    @action(detail=False, methods=['get'], url_path='filtrar-vendedor') 
     def filtrar_vendedor(self, request):
         nome = request.query_params.get('nome')
         preco_min = request.query_params.get('preco_min')
@@ -203,10 +203,11 @@ class ProdutoViewSet(viewsets.ModelViewSet):
             produtos = produtos.filter(estoque__lt=5)
 
         dados = [{
-            'cod_produto': p.cod_produto,
+            'id': p.cod_produto,
             'nome': p.nome,
             'valor_produto': float(p.valor_produto),
-            'estoque': p.estoque
+            'estoque': p.estoque,
+            'descricao': p.descricao
         } for p in produtos]
 
         return Response(dados, status=status.HTTP_200_OK)
