@@ -48,5 +48,5 @@ class DistribuidorViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'], url_path='listar-nomes')
     def listar_nomes(self, request):
-        distribuidores = Distribuidor.objects.all().values_list('nome', flat=True)
+        distribuidores = Distribuidor.objects.all().values('id_distribuidor', 'nome')
         return Response({'distribuidores': list(distribuidores)}, status=status.HTTP_200_OK)
