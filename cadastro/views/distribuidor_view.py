@@ -25,6 +25,14 @@ class DistribuidorViewSet(viewsets.ModelViewSet):
         distribuidor = get_object_or_404(Distribuidor, pk=pk)
         serializer = self.get_serializer(distribuidor)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['post'])
+    def inserir(self, request):
+        serializer = DistribuidorSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'mensagem': 'Distribuidor inserido com sucesso.', 'distribuidor': serializer.data}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # DELETE /api/distribuidores/{id}/remover/
     @action(detail=True, methods=['delete'])

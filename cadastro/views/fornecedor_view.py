@@ -23,7 +23,19 @@ class FornecedorViewSet(viewsets.ModelViewSet):
         fornecedor = get_object_or_404(Fornecedor, pk=pk)
         serializer = self.get_serializer(fornecedor)
         return Response(serializer.data)
-
+    
+    @action(detail=False, methods=['post'])
+    def inserir(self, request):
+        """
+        Insere um novo fornecedor.
+        """
+        serializer = FornecedorSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'mensagem': 'Fornecedor inserido com sucesso.', 'fornecedor': serializer.data},
+                            status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
     @action(detail=True, methods=['delete'])
     def remover(self, request, pk=None):
         fornecedor = get_object_or_404(Fornecedor, pk=pk)
