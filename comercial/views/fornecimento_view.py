@@ -104,3 +104,23 @@ class FornecimentoViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"erro": f"Erro ao registrar fornecimento: {str(e)}"},
                              status=status.HTTP_400_BAD_REQUEST)
+        
+    @action(detail=False, methods=['get'], url_path='listar-simples')
+    def listar_simples(self, request):
+        fornecimentos = Fornecimento.objects.select_related('fornecedor', 'produto').all()
+        dados = fornecimentos.values(
+            'id_fornecimento',
+            'fornecedor__nome',
+            'produto__nome'
+        )
+
+        # Renomeando os campos para algo mais amigável
+        resultado = [
+            {
+                'id_fornecimento': item['id_fornecimento'],
+                'fornecedor': item['fornecedor__nome'],
+                'produto': item['produto__nome']
+            }
+            for item in dados
+        ]
+        return Response(resultado, status=status.HTTP_200_OK)
