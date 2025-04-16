@@ -83,12 +83,16 @@ class ProdutoViewSet(viewsets.ModelViewSet):
             produto.delete()
             return Response({"erro": f"Erro ao criar fornecimento: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['patch'])
     def alterar(self, request, pk=None):
         """
-        Altera os dados de um produto.
+        Altera parcialmente os dados de um produto.
         """
-        produto = Produto.objects.get(pk=pk)
+        try:
+            produto = Produto.objects.get(pk=pk)
+        except Produto.DoesNotExist:
+            return Response({"erro": "Produto não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
         nome = request.data.get('nome', produto.nome)
         valor_produto = request.data.get('valor_produto', produto.valor_produto)
         estoque = request.data.get('estoque', produto.estoque)
@@ -96,7 +100,7 @@ class ProdutoViewSet(viewsets.ModelViewSet):
 
         try:
             valor_produto = round(float(valor_produto), 2)
-        except ValueError:
+        except (ValueError, TypeError):
             return Response({"erro": "Valor do produto deve ser numérico com até duas casas decimais."},
                             status=status.HTTP_400_BAD_REQUEST)
 
