@@ -58,3 +58,8 @@ class FornecedorViewSet(viewsets.ModelViewSet):
     def listar_nomes(self, request):
         fornecedores = Fornecedor.objects.all().values('id_fornecedor', 'nome')
         return Response({'fornecedores': list(fornecedores)}, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['get'], url_path='listar')
+    def listar(self, request):
+        fornecedores = Fornecedor.objects.all().values('id_fornecedor', 'nome', 'cnpj')
+        return Response({'fornecedores': list(fornecedores)}, status=status.HTTP_200_OK)
