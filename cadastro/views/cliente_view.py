@@ -41,6 +41,7 @@ class ClienteViewSet(viewsets.ModelViewSet):
 
         telefone_criptografado = CriptografiaHelper.hash_telefone(telefone)
 
+        # Criptografia da senha
         senha_criptografada = CriptografiaShaHelper.hash_senha(senha)
 
         try:
@@ -134,10 +135,6 @@ class ClienteViewSet(viewsets.ModelViewSet):
 
         telefone_normalizado = re.sub(r'\D', '', telefone)
 
-
-
-
-
         candidatos = []
         for cliente in Cliente.objects.all():
             if CriptografiaHelper.verificar_telefone(telefone_normalizado, cliente.telefone):
@@ -159,31 +156,6 @@ class ClienteViewSet(viewsets.ModelViewSet):
             'erro': 'Telefone ou senha inválidos.'},
             status=status.HTTP_401_UNAUTHORIZED)
 
-
-
-
-
-
-
-        """
-        # Busca candidatos (opcional: refine se tiver muitos)
-        clientes = Cliente.objects.filter(senha=senha)
-
-        for cliente in clientes:
-            if CriptografiaHelper.verificar_telefone(telefone_normalizado, cliente.telefone):
-                return Response({
-                    'id_cliente': cliente.id_cliente,
-                    'nome': cliente.nome,
-                    'telefone': telefone,  # mostra o telefone original que o usuário digitou
-                    'cidade': cliente.cidade
-                })
-
-        # Se nenhum bateu
-        return Response({
-            'erro': 'Telefone ou senha inválidos.'
-        }, status=status.HTTP_401_UNAUTHORIZED)
-        """
-    
     @action(detail=False, methods=['get'], url_path='resumo-por-cliente')
     def resumo_por_cliente(self, request):
         id_cliente = request.query_params.get('id_cliente')
