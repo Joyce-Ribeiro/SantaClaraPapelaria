@@ -109,9 +109,11 @@ class ClienteViewSet(viewsets.ModelViewSet):
 
 
         senha = dados.get('senha')
-        if senha:
+        # Verifica se foi recebido uma senha
+        if senha is not None and senha != '':
             senha_criptografada = CriptografiaShaHelper.hash_senha(senha)
             dados['senha'] = senha_criptografada
+        elif senha == '':
             if 'senha' in dados:
                 del dados['senha']
 
