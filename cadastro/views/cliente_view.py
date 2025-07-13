@@ -92,7 +92,7 @@ class ClienteViewSet(viewsets.ModelViewSet):
         dados = request.data.copy()
 
         telefone = dados.get('telefone')
-        if telefone:
+        if telefone is not None and telefone != '':
             # Validação de formato
             if not CriptografiaHelper.validar_telefone(telefone):
                 return Response({'erro': 'Telefone inválido. Deve estar no formato com DDD e começar com 9.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -106,7 +106,9 @@ class ClienteViewSet(viewsets.ModelViewSet):
 
             telefone_criptografado = CriptografiaHelper.hash_telefone(telefone)
             dados['telefone'] = telefone_criptografado  # Substitui no payload
-
+        elif telefone == '':
+            if 'telefone' in dados:
+                del dados['telefone']
 
         senha = dados.get('senha')
         # Verifica se foi recebido uma senha
