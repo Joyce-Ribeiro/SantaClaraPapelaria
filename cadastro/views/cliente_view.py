@@ -7,6 +7,7 @@ from cadastro.models.cliente import Cliente
 from cadastro.serializers.cliente_serializer import ClienteSerializer
 from rest_framework.permissions import AllowAny
 from decimal import Decimal
+from cadastro.utils.criptografia_helper import CriptografiaHelper
 
 from django.db.models import Case, When, Value, IntegerField
 from comercial.models.ordem_servico import OrdemServico 
@@ -31,9 +32,15 @@ class ClienteViewSet(viewsets.ModelViewSet):
         if not nome or not telefone or not senha:
             return Response({'erro': 'Nome, telefone e senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Validação do telefone
+        if not CriptografiaHelper.validar_telefone(telefone):
+            return Response({'erro': 'Telefone inválido. Deve estar no formato com DDD e começar com 9.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        telefone_criptografado = CriptografiaHelper.hash_telefone(telefone)
+
         cliente = Cliente.objects.create(
             nome=nome,
-            telefone=telefone,
+            telefone=telefone_criptografado,
             senha=senha,
             email=email,
             cidade=cidade
@@ -44,7 +51,6 @@ class ClienteViewSet(viewsets.ModelViewSet):
             'id_cliente': cliente.id_cliente
         }, status=status.HTTP_201_CREATED)
 
-    
     # GET /api/clientes/pesquisar/?nome=xxx
     @action(detail=False, methods=['get'])
     def pesquisar(self, request):
@@ -74,12 +80,24 @@ class ClienteViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['put'])
     def alterar(self, request, pk=None):
         cliente = get_object_or_404(Cliente, pk=pk)
-        serializer = self.get_serializer(cliente, data=request.data)
+        dados = request.data.copy()
+
+        telefone = dados.get('telefone')
+        if telefone:
+            # Valida e normaliza o telefone antes de salvar
+            if not CriptografiaHelper.validar_telefone(telefone):
+                return Response({'erro': 'Telefone inválido. Deve estar no formato com DDD e começar com 9.'}, status=status.HTTP_400_BAD_REQUEST)
+            telefone_criptografado = CriptografiaHelper.hash_telefone(telefone)
+            dados['telefone'] = telefone_criptografado  # Substitui no payload
+
+        serializer = self.get_serializer(cliente, data=dados, partial=True)
+
         if serializer.is_valid():
             serializer.save()
             return Response({'mensagem': 'Cliente alterado com sucesso.', 'cliente': serializer.data})
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     # GET /api/clientes/autenticar/
     @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='autenticar')
     def autenticar(self, request):
@@ -91,34 +109,31 @@ class ClienteViewSet(viewsets.ModelViewSet):
 
         telefone_normalizado = re.sub(r'\D', '', telefone)
 
-        try:
-            cliente = Cliente.objects.get(
-                telefone__regex=r'\D*'.join(telefone_normalizado),
-                senha=senha
-            )
-            return Response({
-                'id_cliente': cliente.id_cliente,
-                'nome': cliente.nome,
-                'telefone': cliente.telefone,
-                'cidade': cliente.cidade
-            })
-        except Cliente.DoesNotExist:
-            return Response({
-                'id_cliente': None,
-                'nome': None,
-                'telefone': None,
-                'cidade': None
-            })
+        # Busca candidatos (opcional: refine se tiver muitos)
+        clientes = Cliente.objects.filter(senha=senha)
 
+        for cliente in clientes:
+            if CriptografiaHelper.verificar_telefone(telefone_normalizado, cliente.telefone):
+                return Response({
+                    'id_cliente': cliente.id_cliente,
+                    'nome': cliente.nome,
+                    'telefone': telefone,  # mostra o telefone original que o usuário digitou
+                    'cidade': cliente.cidade
+                })
+
+        # Se nenhum bateu
+        return Response({
+            'erro': 'Telefone ou senha inválidos.'
+        }, status=status.HTTP_401_UNAUTHORIZED)
 
     
     @action(detail=False, methods=['get'], url_path='resumo-por-cliente')
     def resumo_por_cliente(self, request):
-        telefone = request.query_params.get('telefone')
-        if not telefone:
-            return Response({'erro': 'Parâmetro "telefone" é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
+        id_cliente = request.query_params.get('id_cliente')
+        if not id_cliente:
+            return Response({'erro': 'Parâmetro "id_cliente" é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        cliente = get_object_or_404(Cliente, telefone=telefone)
+        cliente = get_object_or_404(Cliente, id_cliente=id_cliente)
 
         ordering = Case(
             When(pedido__pagamento__status_pagamento='pendente', then=Value(0)),
@@ -146,7 +161,6 @@ class ClienteViewSet(viewsets.ModelViewSet):
             produtos_info = []
             valor_total = 0
 
-            # Aplica a lógica de desconto: cidade ou cupom
             cidade_desconto = cliente.cidade and cliente.cidade.lower() == "sousa"
             cupom_desconto = pedido.cupom and pedido.cupom.lower() in ["onepiece", "flamengo"]
             tem_desconto = cidade_desconto or cupom_desconto
