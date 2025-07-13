@@ -8,6 +8,7 @@ from cadastro.serializers.cliente_serializer import ClienteSerializer
 from rest_framework.permissions import AllowAny
 from decimal import Decimal
 from cadastro.utils.criptografia_helper import CriptografiaHelper
+from cadastro.utils.criptografia_sha_helper import CriptografiaShaHelper
 from django.db import IntegrityError
 from django.db.models import Case, When, Value, IntegerField
 from comercial.models.ordem_servico import OrdemServico 
@@ -40,11 +41,13 @@ class ClienteViewSet(viewsets.ModelViewSet):
 
         telefone_criptografado = CriptografiaHelper.hash_telefone(telefone)
 
+        senha_criptografada = CriptografiaShaHelper.hash_senha(senha)
+
         try:
             cliente = Cliente.objects.create(
                 nome=nome,
                 telefone=telefone_criptografado,
-                senha=senha,
+                senha=senha_criptografada,
                 email=email,
                 cidade=cidade
             )
@@ -103,6 +106,15 @@ class ClienteViewSet(viewsets.ModelViewSet):
             telefone_criptografado = CriptografiaHelper.hash_telefone(telefone)
             dados['telefone'] = telefone_criptografado  # Substitui no payload
 
+
+        senha = dados.get('senha')
+        if senha:
+            senha_criptografada = CriptografiaShaHelper.hash_senha(senha)
+            dados['senha'] = senha_criptografada
+            if 'senha' in dados:
+                del dados['senha']
+
+
         serializer = self.get_serializer(cliente, data=dados, partial=True)
 
         if serializer.is_valid():
@@ -122,6 +134,38 @@ class ClienteViewSet(viewsets.ModelViewSet):
 
         telefone_normalizado = re.sub(r'\D', '', telefone)
 
+
+
+
+
+        candidatos = []
+        for cliente in Cliente.objects.all():
+            if CriptografiaHelper.verificar_telefone(telefone_normalizado, cliente.telefone):
+                candidatos.append(cliente)
+        
+        if not candidatos:
+            return Response({'erro': 'Telefone ou senha inválidos.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        for cliente in candidatos:
+            if CriptografiaShaHelper.verificar_senha(senha, cliente.senha):
+                return Response({
+                    'id_cliente': cliente.id_cliente,
+                    'nome': cliente.nome,
+                    'telefone': telefone,
+                    'cidade': cliente.cidade
+                })
+
+        return Response({
+            'erro': 'Telefone ou senha inválidos.'},
+            status=status.HTTP_401_UNAUTHORIZED)
+
+
+
+
+
+
+
+        """
         # Busca candidatos (opcional: refine se tiver muitos)
         clientes = Cliente.objects.filter(senha=senha)
 
@@ -138,7 +182,7 @@ class ClienteViewSet(viewsets.ModelViewSet):
         return Response({
             'erro': 'Telefone ou senha inválidos.'
         }, status=status.HTTP_401_UNAUTHORIZED)
-
+        """
     
     @action(detail=False, methods=['get'], url_path='resumo-por-cliente')
     def resumo_por_cliente(self, request):
