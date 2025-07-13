@@ -2,6 +2,7 @@ import bcrypt
 import re
 
 class CriptografiaHelper:
+    # Regex para telefone com DDD e obrigatoriamente começando com 9
     REGEX_TELEFONE = r'^\(?\d{2}\)?[\s-]?9\d{4}[-\s]?\d{4}$'
 
     @staticmethod
@@ -10,10 +11,12 @@ class CriptografiaHelper:
 
     @staticmethod
     def normalizar_telefone(telefone: str) -> str:
-        return re.sub(r'\D', '', telefone)  # Remove tudo que não for dígito
+        """Remove qualquer caractere que não seja número."""
+        return re.sub(r'\D', '', telefone)
 
     @staticmethod
     def hash_telefone(telefone: str) -> str:
+        """Normaliza e criptografa o telefone com bcrypt."""
         telefone_normalizado = CriptografiaHelper.normalizar_telefone(telefone)
         telefone_bytes = telefone_normalizado.encode('utf-8')
         hashed = bcrypt.hashpw(telefone_bytes, bcrypt.gensalt())
@@ -21,5 +24,11 @@ class CriptografiaHelper:
 
     @staticmethod
     def verificar_telefone(telefone_inserido: str, telefone_hash: str) -> bool:
+        """Compara o telefone inserido com o hash armazenado."""
         telefone_normalizado = CriptografiaHelper.normalizar_telefone(telefone_inserido)
-        return bcrypt.checkpw(telefone_normalizado.encode('utf-8'), telefone_hash.encode('utf-8'))
+
+        try:
+            return bcrypt.checkpw(telefone_normalizado.encode('utf-8'), telefone_hash.encode('utf-8'))
+        except ValueError:
+            # Hash inválido (ex: valor vazio ou não gerado por bcrypt)
+            return False
