@@ -8,7 +8,7 @@ from cadastro.serializers.cliente_serializer import ClienteSerializer
 from rest_framework.permissions import AllowAny
 from decimal import Decimal
 from cadastro.utils.criptografia_helper import CriptografiaHelper
-
+from django.db import IntegrityError
 from django.db.models import Case, When, Value, IntegerField
 from comercial.models.ordem_servico import OrdemServico 
 
@@ -20,9 +20,6 @@ class ClienteViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def cadastrar(self, request):
-        """
-        Cadastra um cliente.
-        """
         nome = request.data.get('nome')
         telefone = request.data.get('telefone')
         senha = request.data.get('senha')
@@ -32,19 +29,27 @@ class ClienteViewSet(viewsets.ModelViewSet):
         if not nome or not telefone or not senha:
             return Response({'erro': 'Nome, telefone e senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validação do telefone
         if not CriptografiaHelper.validar_telefone(telefone):
             return Response({'erro': 'Telefone inválido. Deve estar no formato com DDD e começar com 9.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Verifica se telefone já existe (mesmo número com hash diferente)
+        telefone_normalizado = CriptografiaHelper.normalizar_telefone(telefone)
+        for cliente in Cliente.objects.all():
+            if CriptografiaHelper.verificar_telefone(telefone_normalizado, cliente.telefone):
+                return Response({'erro': 'Telefone já cadastrado.'}, status=status.HTTP_409_CONFLICT)
+
         telefone_criptografado = CriptografiaHelper.hash_telefone(telefone)
 
-        cliente = Cliente.objects.create(
-            nome=nome,
-            telefone=telefone_criptografado,
-            senha=senha,
-            email=email,
-            cidade=cidade
-        )
+        try:
+            cliente = Cliente.objects.create(
+                nome=nome,
+                telefone=telefone_criptografado,
+                senha=senha,
+                email=email,
+                cidade=cidade
+            )
+        except IntegrityError:
+            return Response({'erro': 'Erro ao salvar o cliente.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({
             'mensagem': f'Cliente {cliente.nome} cadastrado com sucesso.',
@@ -84,9 +89,17 @@ class ClienteViewSet(viewsets.ModelViewSet):
 
         telefone = dados.get('telefone')
         if telefone:
-            # Valida e normaliza o telefone antes de salvar
+            # Validação de formato
             if not CriptografiaHelper.validar_telefone(telefone):
                 return Response({'erro': 'Telefone inválido. Deve estar no formato com DDD e começar com 9.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            telefone_normalizado = CriptografiaHelper.normalizar_telefone(telefone)
+
+            # Verifica se outro cliente já usa esse número
+            for outro_cliente in Cliente.objects.exclude(pk=pk):
+                if CriptografiaHelper.verificar_telefone(telefone_normalizado, outro_cliente.telefone):
+                    return Response({'erro': 'Telefone já cadastrado por outro cliente.'}, status=status.HTTP_409_CONFLICT)
+
             telefone_criptografado = CriptografiaHelper.hash_telefone(telefone)
             dados['telefone'] = telefone_criptografado  # Substitui no payload
 
