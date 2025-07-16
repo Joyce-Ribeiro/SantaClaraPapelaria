@@ -1,4 +1,3 @@
-import re
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -7,11 +6,12 @@ from cadastro.models.cliente import Cliente
 from cadastro.serializers.cliente_serializer import ClienteSerializer
 from rest_framework.permissions import AllowAny
 from decimal import Decimal
-from cadastro.utils.criptografia_helper import CriptografiaHelper
+from cadastro.utils.criptografia_bcrypt_helper import CriptografiaBcryptHelper
 from cadastro.utils.criptografia_sha_helper import CriptografiaShaHelper
 from django.db import IntegrityError
 from django.db.models import Case, When, Value, IntegerField
-from comercial.models.ordem_servico import OrdemServico 
+from comercial.models.ordem_servico import OrdemServico
+import re
 
 class ClienteViewSet(viewsets.ModelViewSet):
     queryset = Cliente.objects.all()
@@ -30,19 +30,11 @@ class ClienteViewSet(viewsets.ModelViewSet):
         if not nome or not telefone or not senha:
             return Response({'erro': 'Nome, telefone e senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not CriptografiaHelper.validar_telefone(telefone):
+        if not CriptografiaShaHelper.validar_telefone(telefone):
             return Response({'erro': 'Telefone inválido. Deve estar no formato com DDD e começar com 9.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Verifica se telefone já existe (mesmo número com hash diferente)
-        telefone_normalizado = CriptografiaHelper.normalizar_telefone(telefone)
-        for cliente in Cliente.objects.all():
-            if CriptografiaHelper.verificar_telefone(telefone_normalizado, cliente.telefone):
-                return Response({'erro': 'Telefone já cadastrado.'}, status=status.HTTP_409_CONFLICT)
-
-        telefone_criptografado = CriptografiaHelper.hash_telefone(telefone)
-
-        # Criptografia da senha
-        senha_criptografada = CriptografiaShaHelper.hash_senha(senha)
+        telefone_criptografado = CriptografiaShaHelper.hash_telefone(telefone)
+        senha_criptografada = CriptografiaBcryptHelper.hash_senha(senha)
 
         try:
             cliente = Cliente.objects.create(
@@ -53,14 +45,13 @@ class ClienteViewSet(viewsets.ModelViewSet):
                 cidade=cidade
             )
         except IntegrityError:
-            return Response({'erro': 'Erro ao salvar o cliente.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'erro': 'Telefone já cadastrado.'}, status=status.HTTP_409_CONFLICT)
 
         return Response({
             'mensagem': f'Cliente {cliente.nome} cadastrado com sucesso.',
             'id_cliente': cliente.id_cliente
         }, status=status.HTTP_201_CREATED)
 
-    # GET /api/clientes/pesquisar/?nome=xxx
     @action(detail=False, methods=['get'])
     def pesquisar(self, request):
         nome = request.query_params.get('nome', '')
@@ -68,14 +59,12 @@ class ClienteViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(clientes, many=True)
         return Response(serializer.data)
 
-    # GET /api/clientes/exibir/<id>/
     @action(detail=True, methods=['get'])
     def exibir(self, request, pk=None):
         cliente = get_object_or_404(Cliente, pk=pk)
         serializer = self.get_serializer(cliente)
         return Response(serializer.data)
 
-    # DELETE /api/clientes/remover/<id>/
     @action(detail=True, methods=['delete'])
     def remover(self, request, pk=None):
         cliente = get_object_or_404(Cliente, pk=pk)
@@ -85,7 +74,6 @@ class ClienteViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'erro': f'Erro ao remover cliente: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # PUT /api/clientes/alterar/<id>/
     @action(detail=True, methods=['put'])
     def alterar(self, request, pk=None):
         cliente = get_object_or_404(Cliente, pk=pk)
@@ -93,42 +81,26 @@ class ClienteViewSet(viewsets.ModelViewSet):
 
         telefone = dados.get('telefone')
         if telefone is not None and telefone != '':
-            # Validação de formato
-            if not CriptografiaHelper.validar_telefone(telefone):
+            if not CriptografiaShaHelper.validar_telefone(telefone):
                 return Response({'erro': 'Telefone inválido. Deve estar no formato com DDD e começar com 9.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            telefone_normalizado = CriptografiaHelper.normalizar_telefone(telefone)
-
-            # Verifica se outro cliente já usa esse número
-            for outro_cliente in Cliente.objects.exclude(pk=pk):
-                if CriptografiaHelper.verificar_telefone(telefone_normalizado, outro_cliente.telefone):
-                    return Response({'erro': 'Telefone já cadastrado por outro cliente.'}, status=status.HTTP_409_CONFLICT)
-
-            telefone_criptografado = CriptografiaHelper.hash_telefone(telefone)
-            dados['telefone'] = telefone_criptografado  # Substitui no payload
+            dados['telefone'] = CriptografiaShaHelper.hash_telefone(telefone)
         elif telefone == '':
-            if 'telefone' in dados:
-                del dados['telefone']
+            dados.pop('telefone', None)
 
         senha = dados.get('senha')
-        # Verifica se foi recebido uma senha
         if senha is not None and senha != '':
-            senha_criptografada = CriptografiaShaHelper.hash_senha(senha)
-            dados['senha'] = senha_criptografada
+            dados['senha'] = CriptografiaBcryptHelper.hash_senha(senha)
         elif senha == '':
-            if 'senha' in dados:
-                del dados['senha']
-
+            dados.pop('senha', None)
 
         serializer = self.get_serializer(cliente, data=dados, partial=True)
-
         if serializer.is_valid():
             serializer.save()
             return Response({'mensagem': 'Cliente alterado com sucesso.', 'cliente': serializer.data})
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # GET /api/clientes/autenticar/
     @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='autenticar')
     def autenticar(self, request):
         telefone = request.query_params.get('telefone')
@@ -137,28 +109,23 @@ class ClienteViewSet(viewsets.ModelViewSet):
         if not telefone or not senha:
             return Response({'erro': 'Telefone e senha são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        telefone_normalizado = re.sub(r'\D', '', telefone)
+        telefone_normalizado = CriptografiaShaHelper.normalizar_telefone(telefone)
+        telefone_hash = CriptografiaShaHelper.hash_telefone(telefone_normalizado)
 
-        candidatos = []
-        for cliente in Cliente.objects.all():
-            if CriptografiaHelper.verificar_telefone(telefone_normalizado, cliente.telefone):
-                candidatos.append(cliente)
-        
-        if not candidatos:
+        try:
+            cliente = Cliente.objects.get(telefone=telefone_hash)
+        except Cliente.DoesNotExist:
             return Response({'erro': 'Telefone ou senha inválidos.'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        for cliente in candidatos:
-            if CriptografiaShaHelper.verificar_senha(senha, cliente.senha):
-                return Response({
-                    'id_cliente': cliente.id_cliente,
-                    'nome': cliente.nome,
-                    'telefone': telefone,
-                    'cidade': cliente.cidade
-                })
+        if CriptografiaBcryptHelper.verificar_senha(senha, cliente.senha):
+            return Response({
+                'id_cliente': cliente.id_cliente,
+                'nome': cliente.nome,
+                'telefone': telefone,
+                'cidade': cliente.cidade
+            })
 
-        return Response({
-            'erro': 'Telefone ou senha inválidos.'},
-            status=status.HTTP_401_UNAUTHORIZED)
+        return Response({'erro': 'Telefone ou senha inválidos.'}, status=status.HTTP_401_UNAUTHORIZED)
 
     @action(detail=False, methods=['get'], url_path='resumo-por-cliente')
     def resumo_por_cliente(self, request):
