@@ -1,15 +1,28 @@
 import hashlib
+import re
 
 class CriptografiaShaHelper:
+    REGEX_TELEFONE = r'^\(?\d{2}\)?[\s-]?9\d{4}[-\s]?\d{4}$'
 
     @staticmethod
-    def hash_senha(senha: str) -> str:
-        """Criptografa a senha sem salt manual."""
-        hashed_bytes = hashlib.sha256(senha.encode('utf-8')).hexdigest()
-        return hashed_bytes
-    
+    def validar_telefone(telefone: str) -> bool:
+        """Valida se o telefone tem o formato correto."""
+        return re.match(CriptografiaShaHelper.REGEX_TELEFONE, telefone) is not None
+
     @staticmethod
-    def verificar_senha(senha_inserida: str, senha_hash_armazenada: str) -> bool:
-        """Verifica se a senha inserida corresponde ao hash que foi armazenado."""
-        rehashed_senha = CriptografiaShaHelper.hash_senha(senha_inserida)
-        return rehashed_senha == senha_hash_armazenada
+    def normalizar_telefone(telefone: str) -> str:
+        """Remove tudo que não for número do telefone."""
+        return re.sub(r'\D', '', telefone)
+
+    @staticmethod
+    def hash_telefone(telefone: str) -> str:
+        """Aplica SHA-256 ao telefone normalizado."""
+        telefone_normalizado = CriptografiaShaHelper.normalizar_telefone(telefone)
+        return hashlib.sha256(telefone_normalizado.encode('utf-8')).hexdigest()
+
+    @staticmethod
+    def verificar_telefone(telefone_inserido: str, telefone_hash_armazenado: str) -> bool:
+        """Compara o telefone inserido com o hash armazenado."""
+        telefone_normalizado = CriptografiaShaHelper.normalizar_telefone(telefone_inserido)
+        rehashed = hashlib.sha256(telefone_normalizado.encode('utf-8')).hexdigest()
+        return rehashed == telefone_hash_armazenado
